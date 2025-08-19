@@ -1,3 +1,13 @@
+/**
+ * PWA 매니페스트 파일
+ *
+ * AI 코드 리뷰어의 Progressive Web App 설정
+ * 앱 설치, 홈 화면 추가, 오프라인 기능을 위한 메타데이터
+ *
+ * @file manifest.json
+ * @description AI 기반 코드 품질 분석 및 리뷰 도구의 PWA 매니페스트
+ * @see https://developer.mozilla.org/en-US/docs/Web/Manifest
+ */
 {
   "name": "AI 코드 리뷰어",
   "short_name": "AI Code Review",
@@ -115,9 +125,5 @@
       "label": "코드 분석 페이지 - 모바일"
     }
   ],
-  "features": [
-    "Cross Platform",
-    "Fast",
-    "Offline Support"
-  ]
+  "features": ["Cross Platform", "Fast", "Offline Support"]
 }

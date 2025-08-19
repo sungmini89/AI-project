@@ -1,18 +1,34 @@
-// 코드 포매팅 서비스 (Prettier 통합)
+/**
+ * 코드 포매팅 서비스 (Prettier 통합)
+ * 다양한 프로그래밍 언어의 코드를 Prettier를 사용하여 자동으로 포맷팅
+ * @module services/formattingService
+ */
 
-import * as prettier from 'prettier/standalone';
-import parserBabel from 'prettier/parser-babel';
-import parserTypeScript from 'prettier/parser-typescript';
-import parserPostcss from 'prettier/parser-postcss';
-import parserHtml from 'prettier/parser-html';
-import type { SupportedLanguage, PrettierResult } from '../types';
+import * as prettier from "prettier/standalone";
+import parserBabel from "prettier/parser-babel";
+import parserTypeScript from "prettier/parser-typescript";
+import parserPostcss from "prettier/parser-postcss";
+import parserHtml from "prettier/parser-html";
+import type { SupportedLanguage, PrettierResult } from "../types";
 
-// Prettier options type (for compatibility)
+/**
+ * Prettier 옵션 타입 (호환성을 위한 임시 타입)
+ */
 type PrettierOptions = any;
 
+/**
+ * 코드 포매팅 서비스 클래스
+ * Prettier를 사용하여 다양한 프로그래밍 언어의 코드를 자동으로 포맷팅
+ * 싱글톤 패턴으로 구현되어 애플리케이션 전체에서 하나의 인스턴스만 사용
+ */
 export class FormattingService {
+  /** 싱글톤 인스턴스 */
   private static instance: FormattingService;
 
+  /**
+   * 서비스 인스턴스 가져오기
+   * @returns FormattingService 인스턴스
+   */
   static getInstance(): FormattingService {
     if (!FormattingService.instance) {
       FormattingService.instance = new FormattingService();
@@ -22,21 +38,25 @@ export class FormattingService {
 
   /**
    * 코드를 포맷팅합니다
+   * @param code - 포맷팅할 코드
+   * @param language - 프로그래밍 언어
+   * @param options - Prettier 옵션 (선택사항)
+   * @returns 포맷팅 결과
    */
   async formatCode(
-    code: string, 
-    language: SupportedLanguage, 
+    code: string,
+    language: SupportedLanguage,
     options?: PrettierOptions
   ): Promise<PrettierResult> {
     try {
       const prettierOptions = this.getPrettierOptions(language, options);
-      
+
       if (!prettierOptions.parser) {
         // Prettier가 지원하지 않는 언어의 경우
         return {
           formatted: code,
           changed: false,
-          diff: undefined
+          diff: undefined,
         };
       }
 
@@ -46,23 +66,26 @@ export class FormattingService {
       return {
         formatted,
         changed,
-        diff: changed ? this.generateDiff(code, formatted) : undefined
+        diff: changed ? this.generateDiff(code, formatted) : undefined,
       };
-
     } catch (error) {
-      console.error('코드 포매팅 오류:', error);
-      
+      console.error("코드 포매팅 오류:", error);
+
       // 에러가 발생한 경우 원본 코드 반환
       return {
         formatted: code,
         changed: false,
-        diff: undefined
+        diff: undefined,
       };
     }
   }
 
   /**
    * 실시간 포맷팅 (타이핑 중)
+   * @param code - 포맷팅할 코드
+   * @param language - 프로그래밍 언어
+   * @param cursorPosition - 현재 커서 위치
+   * @returns 포맷팅된 코드와 새로운 커서 위치
    */
   async formatOnType(
     code: string,
@@ -71,11 +94,11 @@ export class FormattingService {
   ): Promise<{ formatted: string; newCursorPosition: number }> {
     try {
       const result = await this.formatCode(code, language);
-      
+
       if (!result.changed) {
         return {
           formatted: code,
-          newCursorPosition: cursorPosition
+          newCursorPosition: cursorPosition,
         };
       }
 
@@ -88,13 +111,12 @@ export class FormattingService {
 
       return {
         formatted: result.formatted,
-        newCursorPosition
+        newCursorPosition,
       };
-
     } catch (error) {
       return {
         formatted: code,
-        newCursorPosition: cursorPosition
+        newCursorPosition: cursorPosition,
       };
     }
   }
@@ -103,7 +125,7 @@ export class FormattingService {
    * 언어별 Prettier 옵션 설정
    */
   private getPrettierOptions(
-    language: SupportedLanguage, 
+    language: SupportedLanguage,
     customOptions?: PrettierOptions
   ): PrettierOptions {
     const baseOptions: PrettierOptions = {
@@ -112,34 +134,34 @@ export class FormattingService {
       useTabs: false,
       semi: true,
       singleQuote: true,
-      quoteProps: 'as-needed',
-      trailingComma: 'es5',
+      quoteProps: "as-needed",
+      trailingComma: "es5",
       bracketSpacing: true,
       bracketSameLine: false,
-      arrowParens: 'avoid',
-      endOfLine: 'lf',
+      arrowParens: "avoid",
+      endOfLine: "lf",
       plugins: [parserBabel, parserTypeScript, parserPostcss, parserHtml],
-      ...customOptions
+      ...customOptions,
     };
 
     switch (language) {
-      case 'javascript':
+      case "javascript":
         return {
           ...baseOptions,
-          parser: 'babel',
+          parser: "babel",
         };
 
-      case 'typescript':
+      case "typescript":
         return {
           ...baseOptions,
-          parser: 'typescript',
+          parser: "typescript",
         };
 
       // 다른 언어들은 Prettier가 직접 지원하지 않음
       default:
         return {
           ...baseOptions,
-          parser: undefined // 파서 없음을 명시
+          parser: undefined, // 파서 없음을 명시
         };
     }
   }
@@ -148,9 +170,9 @@ export class FormattingService {
    * 간단한 diff 생성
    */
   private generateDiff(original: string, formatted: string): string {
-    const originalLines = original.split('\n');
-    const formattedLines = formatted.split('\n');
-    
+    const originalLines = original.split("\n");
+    const formattedLines = formatted.split("\n");
+
     const diff: string[] = [];
     const maxLength = Math.max(originalLines.length, formattedLines.length);
 
@@ -168,7 +190,7 @@ export class FormattingService {
       }
     }
 
-    return diff.join('\n');
+    return diff.join("\n");
   }
 
   /**
@@ -188,11 +210,8 @@ export class FormattingService {
    * 언어가 Prettier를 지원하는지 확인
    */
   isLanguageSupported(language: SupportedLanguage): boolean {
-    const supportedLanguages = [
-      'javascript',
-      'typescript'
-    ];
-    
+    const supportedLanguages = ["javascript", "typescript"];
+
     return supportedLanguages.includes(language);
   }
 
@@ -206,12 +225,12 @@ export class FormattingService {
       useTabs: false,
       semi: true,
       singleQuote: true,
-      quoteProps: 'as-needed',
-      trailingComma: 'es5',
+      quoteProps: "as-needed",
+      trailingComma: "es5",
       bracketSpacing: true,
       bracketSameLine: false,
-      arrowParens: 'avoid',
-      endOfLine: 'lf'
+      arrowParens: "avoid",
+      endOfLine: "lf",
     };
   }
 
@@ -224,25 +243,37 @@ export class FormattingService {
   } {
     const errors: string[] = [];
 
-    if (settings.printWidth && (settings.printWidth < 20 || settings.printWidth > 200)) {
-      errors.push('printWidth는 20-200 사이여야 합니다');
+    if (
+      settings.printWidth &&
+      (settings.printWidth < 20 || settings.printWidth > 200)
+    ) {
+      errors.push("printWidth는 20-200 사이여야 합니다");
     }
 
-    if (settings.tabWidth && (settings.tabWidth < 1 || settings.tabWidth > 10)) {
-      errors.push('tabWidth는 1-10 사이여야 합니다');
+    if (
+      settings.tabWidth &&
+      (settings.tabWidth < 1 || settings.tabWidth > 10)
+    ) {
+      errors.push("tabWidth는 1-10 사이여야 합니다");
     }
 
-    if (settings.trailingComma && !['none', 'es5', 'all'].includes(settings.trailingComma)) {
-      errors.push('trailingComma는 none, es5, all 중 하나여야 합니다');
+    if (
+      settings.trailingComma &&
+      !["none", "es5", "all"].includes(settings.trailingComma)
+    ) {
+      errors.push("trailingComma는 none, es5, all 중 하나여야 합니다");
     }
 
-    if (settings.arrowParens && !['avoid', 'always'].includes(settings.arrowParens)) {
-      errors.push('arrowParens는 avoid 또는 always여야 합니다');
+    if (
+      settings.arrowParens &&
+      !["avoid", "always"].includes(settings.arrowParens)
+    ) {
+      errors.push("arrowParens는 avoid 또는 always여야 합니다");
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }

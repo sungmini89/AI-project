@@ -1,30 +1,36 @@
-// 오프라인 분석 도구 페이지
+/**
+ * 오프라인 분석 도구 페이지
+ * 인터넷 연결 없이도 코드 분석과 포맷팅을 수행할 수 있는 독립적인 페이지
+ * @module pages/OfflinePage
+ */
 
-import React, { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import CodeEditor from '../components/features/CodeEditor';
-import { useCodeStore, useUIStore } from '../stores';
-import OfflineAnalysisService from '../services/offlineService';
-import FormattingService from '../services/formattingService';
-import type { 
-  SupportedLanguage, 
-  ESLintResult, 
-  ComplexityAnalysis, 
+import React, { useState, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { useLanguage } from "../hooks/useLanguage";
+import CodeEditor from "../components/features/CodeEditor";
+import { useCodeStore, useUIStore } from "../stores";
+import OfflineAnalysisService from "../services/offlineService";
+import FormattingService from "../services/formattingService";
+import type {
+  SupportedLanguage,
+  ESLintResult,
+  ComplexityAnalysis,
   SecurityAnalysis,
-  PrettierResult
-} from '../types';
+  PrettierResult,
+} from "../types";
 
+/**
+ * 오프라인 분석 도구 페이지 컴포넌트
+ * 인터넷 연결이 없어도 ESLint, 복잡도 분석, 보안 분석, Prettier 포맷팅을 수행
+ * @returns 오프라인 분석 페이지 UI
+ */
 export const OfflinePage: React.FC = () => {
-  const { 
-    currentCode, 
-    currentLanguage, 
-    setCode, 
-    setLanguage 
-  } = useCodeStore();
-  
+  const { t } = useLanguage();
+  const { currentCode, currentLanguage, setCode, setLanguage } = useCodeStore();
+
   const { addNotification } = useUIStore();
 
-  // 로컬 상태
+  /** 로컬 상태 */
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<{
     eslint?: ESLintResult[];
@@ -33,27 +39,42 @@ export const OfflinePage: React.FC = () => {
     prettier?: PrettierResult;
   }>({});
 
-  // 서비스 인스턴스
+  /** 서비스 인스턴스 */
   const offlineService = new OfflineAnalysisService();
   const formattingService = FormattingService.getInstance();
 
-  // 코드 변경 핸들러
-  const handleCodeChange = useCallback((newCode: string) => {
-    setCode(newCode);
-  }, [setCode]);
+  /**
+   * 코드 변경 핸들러
+   * @param newCode - 새로운 코드 내용
+   */
+  const handleCodeChange = useCallback(
+    (newCode: string) => {
+      setCode(newCode);
+    },
+    [setCode]
+  );
 
-  // 언어 변경 핸들러
-  const handleLanguageChange = useCallback((newLanguage: SupportedLanguage) => {
-    setLanguage(newLanguage);
-  }, [setLanguage]);
+  /**
+   * 언어 변경 핸들러
+   * @param newLanguage - 새로운 프로그래밍 언어
+   */
+  const handleLanguageChange = useCallback(
+    (newLanguage: SupportedLanguage) => {
+      setLanguage(newLanguage);
+    },
+    [setLanguage]
+  );
 
-  // 오프라인 분석 실행
+  /**
+   * 오프라인 분석 실행
+   * ESLint, 복잡도, 보안, Prettier 분석을 병렬로 실행
+   */
   const handleAnalyze = useCallback(async () => {
     if (!currentCode.trim()) {
       addNotification({
-        type: 'warning',
-        title: '코드 없음',
-        message: '분석할 코드를 입력해주세요.'
+        type: "warning",
+        title: t("offlinePage.noCode"),
+        message: t("offlinePage.noCodeMessage"),
       });
       return;
     }
@@ -63,90 +84,108 @@ export const OfflinePage: React.FC = () => {
 
     try {
       // 병렬로 분석 실행
-      const [eslintResults, complexityResults, securityResults] = await Promise.allSettled([
-        offlineService.analyzeWithESLint(currentCode, currentLanguage),
-        offlineService.calculateComplexity(currentCode, currentLanguage),
-        offlineService.analyzeSecurityPatterns(currentCode, currentLanguage)
-      ]);
+      const [eslintResults, complexityResults, securityResults] =
+        await Promise.allSettled([
+          offlineService.analyzeWithESLint(currentCode, currentLanguage),
+          offlineService.calculateComplexity(currentCode, currentLanguage),
+          offlineService.analyzeSecurityPatterns(currentCode, currentLanguage),
+        ]);
 
-      if (eslintResults.status === 'fulfilled') {
+      if (eslintResults.status === "fulfilled") {
         newResults.eslint = eslintResults.value;
       }
 
-      if (complexityResults.status === 'fulfilled') {
+      if (complexityResults.status === "fulfilled") {
         newResults.complexity = complexityResults.value;
       }
 
-      if (securityResults.status === 'fulfilled') {
+      if (securityResults.status === "fulfilled") {
         newResults.security = securityResults.value;
       }
 
       // Prettier 분석 (지원되는 언어만)
       if (formattingService.isLanguageSupported(currentLanguage)) {
         try {
-          const prettierResult = await formattingService.formatCode(currentCode, currentLanguage);
+          const prettierResult = await formattingService.formatCode(
+            currentCode,
+            currentLanguage
+          );
           newResults.prettier = prettierResult;
         } catch (error) {
-          console.warn('Prettier 분석 실패:', error);
+          console.warn("Prettier 분석 실패:", error);
         }
       }
 
       setResults(newResults);
 
       addNotification({
-        type: 'success',
-        title: '오프라인 분석 완료',
-        message: '로컬 분석이 성공적으로 완료되었습니다.'
+        type: "success",
+        title: t("offlinePage.analysisComplete"),
+        message: t("offlinePage.analysisCompleteMessage"),
       });
-
-    } catch (error) {
-      console.error('오프라인 분석 실패:', error);
+    } catch (analysisError) {
+      console.error("오프라인 분석 실패:", analysisError);
       addNotification({
-        type: 'error',
-        title: '분석 실패',
-        message: '오프라인 분석 중 오류가 발생했습니다.'
+        type: "error",
+        title: t("offlinePage.analysisFailed"),
+        message: t("offlinePage.analysisFailedMessage"),
       });
     } finally {
       setIsAnalyzing(false);
     }
-  }, [currentCode, currentLanguage, offlineService, formattingService, addNotification]);
+  }, [
+    currentCode,
+    currentLanguage,
+    offlineService,
+    formattingService,
+    addNotification,
+  ]);
 
   // 코드 포맷팅
   const handleFormat = useCallback(async () => {
     if (!formattingService.isLanguageSupported(currentLanguage)) {
       addNotification({
-        type: 'warning',
-        title: '포맷팅 불가',
-        message: `${currentLanguage}은(는) Prettier에서 지원되지 않습니다.`
+        type: "warning",
+        title: t("offlinePage.formattingUnsupported"),
+        message: `${currentLanguage}${t("offlinePage.formattingUnsupportedMessage")}`,
       });
       return;
     }
 
     try {
-      const result = await formattingService.formatCode(currentCode, currentLanguage);
-      
+      const result = await formattingService.formatCode(
+        currentCode,
+        currentLanguage
+      );
+
       if (result.changed) {
         setCode(result.formatted);
         addNotification({
-          type: 'success',
-          title: '포맷팅 완료',
-          message: '코드가 성공적으로 포맷팅되었습니다.'
+          type: "success",
+          title: t("offlinePage.formattingComplete"),
+          message: t("offlinePage.formattingCompleteMessage"),
         });
       } else {
         addNotification({
-          type: 'info',
-          title: '포맷팅 불필요',
-          message: '코드가 이미 올바른 형식입니다.'
+          type: "info",
+          title: t("offlinePage.formattingNotNeeded"),
+          message: t("offlinePage.formattingNotNeededMessage"),
         });
       }
-    } catch (error) {
+    } catch (formatError) {
       addNotification({
-        type: 'error',
-        title: '포맷팅 실패',
-        message: '코드 포맷팅 중 오류가 발생했습니다.'
+        type: "error",
+        title: t("offlinePage.formattingFailed"),
+        message: t("offlinePage.formattingUnsupportedMessage"),
       });
     }
-  }, [currentCode, currentLanguage, formattingService, setCode, addNotification]);
+  }, [
+    currentCode,
+    currentLanguage,
+    formattingService,
+    setCode,
+    addNotification,
+  ]);
 
   // 샘플 코드 로드
   const loadSampleCode = useCallback(() => {
@@ -515,20 +554,21 @@ class UserProcessor {
     
     private fun checkPermissions(): Boolean = true
     private fun validateToken(): Boolean = true
-}`
+}`,
     };
 
     const code = sampleCodes[currentLanguage] || sampleCodes.javascript;
     setCode(code);
-    
+
     addNotification({
-      type: 'info',
-      title: '샘플 코드 로드됨',
-      message: `${currentLanguage} 샘플 코드가 로드되었습니다.`
+      type: "info",
+      title: t("offlinePage.sampleLoaded"),
+      message: `${currentLanguage}${t("offlinePage.sampleLoadedMessage")}`,
     });
   }, [currentLanguage, setCode, addNotification]);
 
-  const totalIssues = (results.eslint?.length || 0) + (results.security?.issues.length || 0);
+  const totalIssues =
+    (results.eslint?.length || 0) + (results.security?.issues.length || 0);
 
   return (
     <div className="min-h-screen bg-secondary-50 dark:bg-secondary-900">
@@ -541,19 +581,19 @@ class UserProcessor {
                 to="/"
                 className="text-secondary-600 hover:text-secondary-800 dark:text-secondary-400 dark:hover:text-secondary-200"
               >
-                ← 홈으로
+                {t("navigation.backToHome")}
               </Link>
               <h1 className="text-xl font-bold text-secondary-900 dark:text-white">
-                📱 오프라인 코드 분석
+                📱 {t("offline.title")}
               </h1>
             </div>
 
             <div className="flex items-center space-x-2">
               <span className="text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded-full">
-                오프라인 모드
+                {t("offlinePage.modes.offline")}
               </span>
               <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full">
-                무제한 사용
+                {t("offlinePage.modes.unlimited")}
               </span>
             </div>
           </div>
@@ -567,24 +607,23 @@ class UserProcessor {
             <div className="text-4xl">🔧</div>
             <div>
               <h2 className="text-lg font-semibold text-secondary-900 dark:text-white mb-2">
-                오프라인 코드 분석 도구
+                {t("offlinePage.description.title")}
               </h2>
               <p className="text-secondary-600 dark:text-secondary-400 mb-4">
-                인터넷 연결 없이도 사용할 수 있는 로컬 코드 분석 도구입니다. 
-                ESLint 규칙, 복잡도 분석, 보안 패턴 검사, Prettier 포맷팅을 제공합니다.
+                {t("offlinePage.description.content")}
               </p>
               <div className="flex flex-wrap gap-2">
                 <span className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 px-2 py-1 rounded-full">
-                  ✅ ESLint 검사
+                  ✅ {t("offlinePage.description.features.eslint")}
                 </span>
                 <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full">
-                  📊 복잡도 분석
+                  📊 {t("offlinePage.description.features.complexity")}
                 </span>
                 <span className="text-xs bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 px-2 py-1 rounded-full">
-                  🛡️ 보안 검사
+                  🛡️ {t("offlinePage.description.features.security")}
                 </span>
                 <span className="text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 px-2 py-1 rounded-full">
-                  ✨ 코드 포맷팅
+                  ✨ {t("offlinePage.description.features.formatting")}
                 </span>
               </div>
             </div>
@@ -603,21 +642,36 @@ class UserProcessor {
                       onClick={handleAnalyze}
                       disabled={isAnalyzing}
                       className={`btn-primary px-6 py-2 rounded-lg ${
-                        isAnalyzing ? 'cursor-not-allowed opacity-50' : ''
+                        isAnalyzing ? "cursor-not-allowed opacity-50" : ""
                       }`}
                     >
                       {isAnalyzing ? (
                         <span className="flex items-center space-x-2">
-                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                          <svg
+                            className="animate-spin h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            />
                           </svg>
-                          <span>분석 중...</span>
+                          <span>{t("offlinePage.buttons.analyzing")}</span>
                         </span>
                       ) : (
                         <span className="flex items-center space-x-2">
                           <span>🔍</span>
-                          <span>오프라인 분석</span>
+                          <span>{t("offlinePage.buttons.analyze")}</span>
                         </span>
                       )}
                     </button>
@@ -627,7 +681,7 @@ class UserProcessor {
                       disabled={isAnalyzing}
                       className="btn-secondary px-4 py-2 rounded-lg"
                     >
-                      ✨ 포맷팅
+                      ✨ {t("offlinePage.buttons.format")}
                     </button>
 
                     <button
@@ -635,21 +689,25 @@ class UserProcessor {
                       disabled={isAnalyzing}
                       className="btn-secondary px-4 py-2 rounded-lg"
                     >
-                      📄 샘플 로드
+                      📄 {t("offlinePage.buttons.loadSample")}
                     </button>
                   </div>
 
                   {totalIssues > 0 && (
                     <span className="text-sm bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 px-2 py-1 rounded-full">
-                      {totalIssues}개 이슈 발견
+                      {totalIssues}
+                      {t("offlinePage.issues")}
                     </span>
                   )}
                 </div>
 
                 {/* AI 분석 안내 */}
                 <div className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 p-3 rounded">
-                  💡 더 고급 분석을 원하시면 <Link to="/analyze" className="underline">AI 분석 페이지</Link>에서 
-                  Google Gemini API를 사용해보세요!
+                  💡 {t("offlinePage.aiNotice").split("AI 분석 페이지")[0]}
+                  <Link to="/analyze" className="underline">
+                    {t("analyzer.title")}
+                  </Link>
+                  {t("offlinePage.aiNotice").split("AI 분석 페이지")[1]}
                 </div>
               </div>
 
@@ -686,14 +744,19 @@ const OfflineAnalysisResults: React.FC<{
   isAnalyzing: boolean;
   language: SupportedLanguage;
 }> = ({ results, isAnalyzing, language: _language }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'eslint' | 'complexity' | 'security' | 'prettier'>('overview');
+  const { t } = useLanguage();
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "eslint" | "complexity" | "security" | "prettier"
+  >("overview");
 
   if (isAnalyzing) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-secondary-600 dark:text-secondary-400">오프라인 분석 중...</p>
+          <p className="text-secondary-600 dark:text-secondary-400">
+            {t("offlinePage.analyzing")}
+          </p>
         </div>
       </div>
     );
@@ -707,10 +770,10 @@ const OfflineAnalysisResults: React.FC<{
         <div className="text-center">
           <div className="text-6xl mb-4">🔧</div>
           <h3 className="text-lg font-semibold text-secondary-700 dark:text-secondary-300 mb-2">
-            분석 준비 완료
+            {t("offlinePage.ready")}
           </h3>
           <p className="text-secondary-600 dark:text-secondary-400">
-            코드를 입력하고 오프라인 분석을 시작해보세요.
+            {t("offlinePage.readyDescription")}
           </p>
         </div>
       </div>
@@ -718,26 +781,44 @@ const OfflineAnalysisResults: React.FC<{
   }
 
   const tabs = [
-    { key: 'overview' as const, label: '개요', available: true },
-    { key: 'eslint' as const, label: 'ESLint', available: !!results.eslint, count: results.eslint?.length },
-    { key: 'complexity' as const, label: '복잡도', available: !!results.complexity },
-    { key: 'security' as const, label: '보안', available: !!results.security, count: results.security?.issues.length },
-    { key: 'prettier' as const, label: 'Prettier', available: !!results.prettier }
-  ].filter(tab => tab.available);
+    { key: "overview" as const, label: "개요", available: true },
+    {
+      key: "eslint" as const,
+      label: "ESLint",
+      available: !!results.eslint,
+      count: results.eslint?.length,
+    },
+    {
+      key: "complexity" as const,
+      label: "복잡도",
+      available: !!results.complexity,
+    },
+    {
+      key: "security" as const,
+      label: "보안",
+      available: !!results.security,
+      count: results.security?.issues.length,
+    },
+    {
+      key: "prettier" as const,
+      label: "Prettier",
+      available: !!results.prettier,
+    },
+  ].filter((tab) => tab.available);
 
   return (
     <div className="h-full flex flex-col">
       {/* 탭 헤더 */}
       <div className="border-b border-secondary-200 dark:border-secondary-700 bg-white dark:bg-secondary-800 p-2">
         <div className="flex space-x-1">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                  : 'text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200'
+                  ? "bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300"
+                  : "text-secondary-600 dark:text-secondary-400 hover:text-secondary-800 dark:hover:text-secondary-200"
               }`}
             >
               {tab.label}
@@ -753,25 +834,29 @@ const OfflineAnalysisResults: React.FC<{
 
       {/* 탭 내용 */}
       <div className="flex-1 overflow-y-auto p-4">
-        {activeTab === 'overview' && (
+        {activeTab === "overview" && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-secondary-900 dark:text-white">
               오프라인 분석 결과
             </h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-4 card">
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {results.eslint?.length || 0}
                 </div>
-                <div className="text-sm text-secondary-600 dark:text-secondary-400">ESLint 이슈</div>
+                <div className="text-sm text-secondary-600 dark:text-secondary-400">
+                  ESLint 이슈
+                </div>
               </div>
-              
+
               <div className="text-center p-4 card">
                 <div className="text-2xl font-bold text-red-600 dark:text-red-400">
                   {results.security?.issues.length || 0}
                 </div>
-                <div className="text-sm text-secondary-600 dark:text-secondary-400">보안 이슈</div>
+                <div className="text-sm text-secondary-600 dark:text-secondary-400">
+                  보안 이슈
+                </div>
               </div>
             </div>
 
@@ -782,26 +867,40 @@ const OfflineAnalysisResults: React.FC<{
                 </h4>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <div className={`text-xl font-bold ${
-                      results.complexity.cyclomatic <= 10 ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
+                    <div
+                      className={`text-xl font-bold ${
+                        results.complexity.cyclomatic <= 10
+                          ? "text-green-600"
+                          : "text-yellow-600"
+                      }`}
+                    >
                       {results.complexity.cyclomatic}
                     </div>
-                    <div className="text-xs text-secondary-600 dark:text-secondary-400">순환 복잡도</div>
+                    <div className="text-xs text-secondary-600 dark:text-secondary-400">
+                      순환 복잡도
+                    </div>
                   </div>
                   <div>
-                    <div className={`text-xl font-bold ${
-                      results.complexity.cognitive <= 15 ? 'text-green-600' : 'text-yellow-600'
-                    }`}>
+                    <div
+                      className={`text-xl font-bold ${
+                        results.complexity.cognitive <= 15
+                          ? "text-green-600"
+                          : "text-yellow-600"
+                      }`}
+                    >
                       {results.complexity.cognitive}
                     </div>
-                    <div className="text-xs text-secondary-600 dark:text-secondary-400">인지 복잡도</div>
+                    <div className="text-xs text-secondary-600 dark:text-secondary-400">
+                      인지 복잡도
+                    </div>
                   </div>
                   <div>
                     <div className="text-xl font-bold text-blue-600">
                       {results.complexity.lines}
                     </div>
-                    <div className="text-xs text-secondary-600 dark:text-secondary-400">총 줄 수</div>
+                    <div className="text-xs text-secondary-600 dark:text-secondary-400">
+                      총 줄 수
+                    </div>
                   </div>
                 </div>
               </div>
@@ -810,7 +909,7 @@ const OfflineAnalysisResults: React.FC<{
         )}
 
         {/* 다른 탭들은 AnalysisResults 컴포넌트와 유사하게 구현 */}
-        {activeTab === 'eslint' && results.eslint && (
+        {activeTab === "eslint" && results.eslint && (
           <div className="space-y-3">
             {results.eslint.length === 0 ? (
               <div className="text-center py-8">
@@ -823,19 +922,25 @@ const OfflineAnalysisResults: React.FC<{
               results.eslint.map((issue: ESLintResult, index: number) => (
                 <div key={index} className="card p-4">
                   <div className="flex items-start space-x-3">
-                    <div className={`w-2 h-2 rounded-full mt-2 ${
-                      issue.severity === 'error' ? 'bg-red-500' : 'bg-yellow-500'
-                    }`} />
+                    <div
+                      className={`w-2 h-2 rounded-full mt-2 ${
+                        issue.severity === "error"
+                          ? "bg-red-500"
+                          : "bg-yellow-500"
+                      }`}
+                    />
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
                         <span className="text-sm font-mono text-secondary-600 dark:text-secondary-400">
                           줄 {issue.line}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          issue.severity === 'error' 
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            issue.severity === "error"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+                          }`}
+                        >
                           {issue.severity}
                         </span>
                       </div>

@@ -1,50 +1,60 @@
-// 코드 분석 결과 상태 스토어
+/**
+ * 코드 분석 결과 상태 스토어
+ * 코드 분석 진행 상태, 결과, 히스토리를 관리하고 분석 라이프사이클을 제어
+ * @module stores/analysisStore
+ */
 
-import { create } from 'zustand';
-import type { 
-  CodeAnalysis, 
-  SupportedLanguage, 
+import { create } from "zustand";
+import type {
+  CodeAnalysis,
+  SupportedLanguage,
   ServiceStatus,
   ESLintResult,
   ComplexityAnalysis,
   SecurityAnalysis,
-  AIAnalysisResult
-} from '../types';
+  AIAnalysisResult,
+} from "../types";
 
+/**
+ * 분석 상태 인터페이스
+ * 분석 진행 상태, 결과, 히스토리와 관련 액션들을 정의
+ */
 interface AnalysisState {
-  // 현재 분석 상태
+  /** 현재 분석 상태 */
   isAnalyzing: boolean;
+  /** 현재 분석 결과 */
   currentAnalysis: CodeAnalysis | null;
+  /** 분석 히스토리 */
   analysisHistory: CodeAnalysis[];
-  
-  // 서비스 상태
+
+  /** 서비스 상태 */
   serviceStatus: ServiceStatus | null;
-  
-  // 에러 상태
+
+  /** 에러 상태 */
   error: string | null;
-  
-  // 액션들
+
+  /** 액션들 */
   startAnalysis: () => void;
   completeAnalysis: (analysis: CodeAnalysis) => void;
   failAnalysis: (error: string) => void;
   clearError: () => void;
-  
-  // 분석 결과 업데이트
+
+  /** 분석 결과 업데이트 */
   updateESLintResults: (results: ESLintResult[]) => void;
   updateComplexityResults: (results: ComplexityAnalysis) => void;
   updateSecurityResults: (results: SecurityAnalysis) => void;
   updateAIResults: (results: AIAnalysisResult) => void;
-  
-  // 히스토리 관리
+
+  /** 히스토리 관리 */
   saveToHistory: () => void;
   loadFromHistory: (id: string) => void;
   deleteFromHistory: (id: string) => void;
   clearHistory: () => void;
-  
-  // 서비스 상태 관리
+
+  /** 서비스 상태 관리 */
   updateServiceStatus: (status: ServiceStatus) => void;
-  
-  // 유틸리티
+
+  /** 유틸리티 */
   getAnalysisById: (id: string) => CodeAnalysis | undefined;
   getRecentAnalyses: (limit?: number) => CodeAnalysis[];
   getAnalysesByLanguage: (language: SupportedLanguage) => CodeAnalysis[];
@@ -56,6 +66,10 @@ interface AnalysisState {
   };
 }
 
+/**
+ * 분석 상태 관리 스토어
+ * Zustand를 사용하여 코드 분석 관련 상태를 관리
+ */
 export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   // 초기 상태
   isAnalyzing: false,
@@ -64,46 +78,64 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   serviceStatus: null,
   error: null,
 
-  // 분석 라이프사이클
+  /**
+   * 분석 라이프사이클
+   * 분석 시작 시 상태를 업데이트
+   */
   startAnalysis: () => {
     set({
       isAnalyzing: true,
-      error: null
+      error: null,
     });
   },
 
+  /**
+   * 분석 완료 시 결과를 저장하고 상태를 업데이트
+   * @param analysis - 완료된 분석 결과
+   */
   completeAnalysis: (analysis: CodeAnalysis) => {
     set({
       isAnalyzing: false,
       currentAnalysis: analysis,
-      error: null
+      error: null,
     });
   },
 
+  /**
+   * 분석 실패 시 에러를 저장하고 상태를 업데이트
+   * @param error - 발생한 에러 메시지
+   */
   failAnalysis: (error: string) => {
     set({
       isAnalyzing: false,
-      error
+      error,
     });
   },
 
+  /**
+   * 에러 상태를 클리어
+   */
   clearError: () => {
     set({ error: null });
   },
 
-  // 분석 결과 부분 업데이트
+  /**
+   * 분석 결과 부분 업데이트
+   * ESLint 결과를 현재 분석에 업데이트
+   * @param results - ESLint 분석 결과
+   */
   updateESLintResults: (results: ESLintResult[]) => {
     set((state) => {
       if (!state.currentAnalysis) return state;
-      
+
       return {
         currentAnalysis: {
           ...state.currentAnalysis,
           results: {
             ...state.currentAnalysis.results,
-            eslint: results
-          }
-        }
+            eslint: results,
+          },
+        },
       };
     });
   },
@@ -111,15 +143,15 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   updateComplexityResults: (results: ComplexityAnalysis) => {
     set((state) => {
       if (!state.currentAnalysis) return state;
-      
+
       return {
         currentAnalysis: {
           ...state.currentAnalysis,
           results: {
             ...state.currentAnalysis.results,
-            complexity: results
-          }
-        }
+            complexity: results,
+          },
+        },
       };
     });
   },
@@ -127,15 +159,15 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   updateSecurityResults: (results: SecurityAnalysis) => {
     set((state) => {
       if (!state.currentAnalysis) return state;
-      
+
       return {
         currentAnalysis: {
           ...state.currentAnalysis,
           results: {
             ...state.currentAnalysis.results,
-            security: results
-          }
-        }
+            security: results,
+          },
+        },
       };
     });
   },
@@ -143,15 +175,15 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   updateAIResults: (results: AIAnalysisResult) => {
     set((state) => {
       if (!state.currentAnalysis) return state;
-      
+
       return {
         currentAnalysis: {
           ...state.currentAnalysis,
           results: {
             ...state.currentAnalysis.results,
-            ai: results
-          }
-        }
+            ai: results,
+          },
+        },
       };
     });
   },
@@ -164,15 +196,15 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
     set((prevState) => ({
       analysisHistory: [
         state.currentAnalysis!,
-        ...prevState.analysisHistory.slice(0, 49) // 최대 50개 저장
-      ]
+        ...prevState.analysisHistory.slice(0, 49), // 최대 50개 저장
+      ],
     }));
   },
 
   loadFromHistory: (id: string) => {
     const state = get();
-    const analysis = state.analysisHistory.find(a => a.id === id);
-    
+    const analysis = state.analysisHistory.find((a) => a.id === id);
+
     if (analysis) {
       set({ currentAnalysis: analysis });
     }
@@ -180,7 +212,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
 
   deleteFromHistory: (id: string) => {
     set((state) => ({
-      analysisHistory: state.analysisHistory.filter(a => a.id !== id)
+      analysisHistory: state.analysisHistory.filter((a) => a.id !== id),
     }));
   },
 
@@ -196,7 +228,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   // 유틸리티 함수들
   getAnalysisById: (id: string) => {
     const state = get();
-    return state.analysisHistory.find(a => a.id === id);
+    return state.analysisHistory.find((a) => a.id === id);
   },
 
   getRecentAnalyses: (limit = 10) => {
@@ -209,7 +241,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
   getAnalysesByLanguage: (language: SupportedLanguage) => {
     const state = get();
     return state.analysisHistory
-      .filter(a => a.language === language)
+      .filter((a) => a.language === language)
       .sort((a, b) => b.timestamp - a.timestamp);
   },
 
@@ -222,21 +254,27 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
         total: 0,
         byLanguage: {},
         byMode: {},
-        avgScore: 0
+        avgScore: 0,
       };
     }
 
     // 언어별 통계
-    const byLanguage = analysisHistory.reduce((acc, analysis) => {
-      acc[analysis.language] = (acc[analysis.language] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byLanguage = analysisHistory.reduce(
+      (acc, analysis) => {
+        acc[analysis.language] = (acc[analysis.language] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // 모드별 통계
-    const byMode = analysisHistory.reduce((acc, analysis) => {
-      acc[analysis.mode] = (acc[analysis.mode] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const byMode = analysisHistory.reduce(
+      (acc, analysis) => {
+        acc[analysis.mode] = (acc[analysis.mode] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // 평균 점수 계산
     const totalScore = analysisHistory.reduce((sum, analysis) => {
@@ -248,7 +286,7 @@ export const useAnalysisStore = create<AnalysisState>((set, get) => ({
       total: analysisHistory.length,
       byLanguage,
       byMode,
-      avgScore: Math.round(avgScore)
+      avgScore: Math.round(avgScore),
     };
-  }
+  },
 }));

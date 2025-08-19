@@ -1,27 +1,42 @@
-// Monaco Editor 통합 컴포넌트
+/**
+ * Monaco Editor 통합 컴포넌트
+ * 코드 편집, 구문 강조, 자동 완성 등의 기능을 제공
+ * @module components/features/CodeEditor
+ */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import MonacoEditor, { type Monaco } from '@monaco-editor/react';
-import type { editor } from 'monaco-editor';
-import type { CodeEditorProps, SupportedLanguage } from '../../types';
+import React, { useState, useCallback, useRef, useEffect } from "react";
+import MonacoEditor, { type Monaco } from "@monaco-editor/react";
+import type { editor } from "monaco-editor";
+import type { CodeEditorProps, SupportedLanguage } from "../../types";
+import { useLanguage } from "../../hooks/useLanguage";
 
-// 언어 옵션 매핑
-const LANGUAGE_OPTIONS: { value: SupportedLanguage; label: string; ext: string }[] = [
-  { value: 'javascript', label: 'JavaScript', ext: '.js' },
-  { value: 'typescript', label: 'TypeScript', ext: '.ts' },
-  { value: 'python', label: 'Python', ext: '.py' },
-  { value: 'java', label: 'Java', ext: '.java' },
-  { value: 'cpp', label: 'C++', ext: '.cpp' },
-  { value: 'csharp', label: 'C#', ext: '.cs' },
-  { value: 'go', label: 'Go', ext: '.go' },
-  { value: 'rust', label: 'Rust', ext: '.rs' },
-  { value: 'php', label: 'PHP', ext: '.php' },
-  { value: 'ruby', label: 'Ruby', ext: '.rb' },
-  { value: 'swift', label: 'Swift', ext: '.swift' },
-  { value: 'kotlin', label: 'Kotlin', ext: '.kt' }
+/**
+ * 언어 옵션 매핑
+ * 지원되는 프로그래밍 언어와 표시명, 확장자 정보
+ */
+const LANGUAGE_OPTIONS: {
+  value: SupportedLanguage;
+  label: string;
+  ext: string;
+}[] = [
+  { value: "javascript", label: "JavaScript", ext: ".js" },
+  { value: "typescript", label: "TypeScript", ext: ".ts" },
+  { value: "python", label: "Python", ext: ".py" },
+  { value: "java", label: "Java", ext: ".java" },
+  { value: "cpp", label: "C++", ext: ".cpp" },
+  { value: "csharp", label: "C#", ext: ".cs" },
+  { value: "go", label: "Go", ext: ".go" },
+  { value: "rust", label: "Rust", ext: ".rs" },
+  { value: "php", label: "PHP", ext: ".php" },
+  { value: "ruby", label: "Ruby", ext: ".rb" },
+  { value: "swift", label: "Swift", ext: ".swift" },
+  { value: "kotlin", label: "Kotlin", ext: ".kt" },
 ];
 
-// 샘플 코드 템플릿
+/**
+ * 샘플 코드 템플릿
+ * 각 프로그래밍 언어별 기본 예시 코드
+ */
 const SAMPLE_CODE: Record<SupportedLanguage, string> = {
   javascript: `// JavaScript 코드 예시
 function fibonacci(n) {
@@ -174,7 +189,7 @@ fun fibonacci(n: Int): Int {
 fun main() {
     val result = fibonacci(10)
     println("피보나치 수: $result")
-}`
+}`,
 };
 
 export const CodeEditor: React.FC<CodeEditorProps> = ({
@@ -182,73 +197,76 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   language,
   onChange,
   onLanguageChange,
-  theme = 'light',
+  theme = "light",
   height = 500,
   readonly = false,
-  showMinimap = true
+  showMinimap = true,
 }) => {
-  const [editorInstance, setEditorInstance] = useState<editor.IStandaloneCodeEditor | null>(null);
+  const { t } = useLanguage();
+  const [editorInstance, setEditorInstance] =
+    useState<editor.IStandaloneCodeEditor | null>(null);
   const [monaco, setMonaco] = useState<Monaco | null>(null);
   const monacoRef = useRef<Monaco | null>(null);
 
   // 에디터 마운트 시 설정
-  const handleEditorDidMount = useCallback((
-    editor: editor.IStandaloneCodeEditor,
-    monaco: Monaco
-  ) => {
-    setEditorInstance(editor);
-    setMonaco(monaco);
-    monacoRef.current = monaco;
+  const handleEditorDidMount = useCallback(
+    (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+      setEditorInstance(editor);
+      setMonaco(monaco);
+      monacoRef.current = monaco;
 
-    // 에디터 설정
-    editor.updateOptions({
-      fontSize: 14,
-      fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
-      lineNumbers: 'on',
-      wordWrap: 'on',
-      minimap: { enabled: showMinimap },
-      scrollBeyondLastLine: false,
-      automaticLayout: true,
-      tabSize: 2,
-      insertSpaces: true,
-      formatOnType: true,
-      formatOnPaste: true,
-    });
+      // 에디터 설정
+      editor.updateOptions({
+        fontSize: 14,
+        fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
+        lineNumbers: "on",
+        wordWrap: "on",
+        minimap: { enabled: showMinimap },
+        scrollBeyondLastLine: false,
+        automaticLayout: true,
+        tabSize: 2,
+        insertSpaces: true,
+        formatOnType: true,
+        formatOnPaste: true,
+      });
 
-    // 키보드 단축키 설정
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
-      // Ctrl+S 또는 Cmd+S로 코드 포매팅
-      editor.trigger('keyboard', 'editor.action.formatDocument', {});
-    });
+      // 키보드 단축키 설정
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        // Ctrl+S 또는 Cmd+S로 코드 포매팅
+        editor.trigger("keyboard", "editor.action.formatDocument", {});
+      });
 
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => {
-      // Ctrl+K 또는 Cmd+K로 명령 팔레트
-      editor.trigger('keyboard', 'editor.action.quickCommand', {});
-    });
-  }, [showMinimap]);
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => {
+        // Ctrl+K 또는 Cmd+K로 명령 팔레트
+        editor.trigger("keyboard", "editor.action.quickCommand", {});
+      });
+    },
+    [showMinimap]
+  );
 
   // 언어별 Monaco 설정
   useEffect(() => {
     if (!monaco) return;
 
     // TypeScript 컴파일러 옵션 설정
-    if (language === 'typescript') {
+    if (language === "typescript") {
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ES2020,
         allowNonTsExtensions: true,
-        moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+        moduleResolution:
+          monaco.languages.typescript.ModuleResolutionKind.NodeJs,
         module: monaco.languages.typescript.ModuleKind.CommonJS,
         noEmit: true,
         esModuleInterop: true,
         jsx: monaco.languages.typescript.JsxEmit.React,
-        reactNamespace: 'React',
+        reactNamespace: "React",
         allowJs: true,
         strict: true,
       });
     }
 
     // JavaScript 컴파일러 옵션 설정
-    if (language === 'javascript') {
+    if (language === "javascript") {
       monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ES2020,
         allowNonTsExtensions: true,
@@ -259,30 +277,33 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   }, [monaco, language]);
 
   // 언어 변경 핸들러
-  const handleLanguageChange = useCallback((newLanguage: SupportedLanguage) => {
-    onLanguageChange(newLanguage);
-    
-    // 언어가 변경될 때 샘플 코드 로드 (현재 코드가 비어있을 때만)
-    if (!value.trim()) {
-      onChange(SAMPLE_CODE[newLanguage] || '');
-    }
-  }, [value, onChange, onLanguageChange]);
+  const handleLanguageChange = useCallback(
+    (newLanguage: SupportedLanguage) => {
+      onLanguageChange(newLanguage);
+
+      // 언어가 변경될 때 샘플 코드 로드 (현재 코드가 비어있을 때만)
+      if (!value.trim()) {
+        onChange(SAMPLE_CODE[newLanguage] || "");
+      }
+    },
+    [value, onChange, onLanguageChange]
+  );
 
   // 샘플 코드 로드
   const handleLoadSample = useCallback(() => {
-    onChange(SAMPLE_CODE[language] || '');
+    onChange(SAMPLE_CODE[language] || "");
   }, [language, onChange]);
 
   // 코드 포매팅
   const handleFormatCode = useCallback(() => {
     if (editorInstance) {
-      editorInstance.trigger('keyboard', 'editor.action.formatDocument', {});
+      editorInstance.trigger("keyboard", "editor.action.formatDocument", {});
     }
   }, [editorInstance]);
 
   // 코드 지우기
   const handleClearCode = useCallback(() => {
-    onChange('');
+    onChange("");
   }, [onChange]);
 
   return (
@@ -293,15 +314,17 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
           {/* 언어 선택 */}
           <div className="flex items-center space-x-2">
             <label className="text-sm font-medium text-secondary-700 dark:text-secondary-300">
-              언어:
+              {t("editor.language")}:
             </label>
             <select
               value={language}
-              onChange={(e) => handleLanguageChange(e.target.value as SupportedLanguage)}
+              onChange={(e) =>
+                handleLanguageChange(e.target.value as SupportedLanguage)
+              }
               className="input-field text-sm min-w-[120px]"
               disabled={readonly}
             >
-              {LANGUAGE_OPTIONS.map(option => (
+              {LANGUAGE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -311,7 +334,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
           {/* 파일 확장자 표시 */}
           <div className="text-sm text-secondary-500">
-            {LANGUAGE_OPTIONS.find(opt => opt.value === language)?.ext}
+            {LANGUAGE_OPTIONS.find((opt) => opt.value === language)?.ext}
           </div>
         </div>
 
@@ -321,23 +344,23 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
             <button
               onClick={handleLoadSample}
               className="btn-secondary text-sm"
-              title="샘플 코드 로드"
+              title={t("editor.sample")}
             >
-              📄 샘플
+              📄 {t("editor.sample")}
             </button>
             <button
               onClick={handleFormatCode}
               className="btn-secondary text-sm"
-              title="코드 포매팅 (Ctrl+S)"
+              title={t("editor.formatting")}
             >
-              ✨ 포매팅
+              ✨ {t("editor.formatting")}
             </button>
             <button
               onClick={handleClearCode}
               className="btn-secondary text-sm text-red-600 hover:bg-red-50"
-              title="코드 지우기"
+              title={t("editor.clear")}
             >
-              🗑️ 지우기
+              🗑️ {t("editor.clear")}
             </button>
           </div>
         )}
@@ -348,14 +371,14 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         <MonacoEditor
           value={value}
           language={language}
-          theme={theme === 'dark' ? 'vs-dark' : 'vs-light'}
-          onChange={(newValue) => onChange(newValue || '')}
+          theme={theme === "dark" ? "vs-dark" : "vs-light"}
+          onChange={(newValue) => onChange(newValue || "")}
           onMount={handleEditorDidMount}
           options={{
             readOnly: readonly,
             selectOnLineNumbers: true,
             roundedSelection: false,
-            cursorStyle: 'line',
+            cursorStyle: "line",
             automaticLayout: true,
           }}
         />
@@ -364,18 +387,26 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       {/* 상태 표시 */}
       <div className="flex items-center justify-between px-4 py-2 bg-secondary-50 dark:bg-secondary-800 border-t border-secondary-200 dark:border-secondary-700 text-sm text-secondary-600 dark:text-secondary-400">
         <div className="flex items-center space-x-4">
-          <span>줄: {value.split('\n').length}</span>
-          <span>글자: {value.length}</span>
+          <span>
+            {t("editor.line")}: {value.split("\n").length}
+          </span>
+          <span>
+            {t("editor.character")}: {value.length}
+          </span>
           {language && (
             <span className="flex items-center space-x-1">
               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span>{LANGUAGE_OPTIONS.find(opt => opt.value === language)?.label}</span>
+              <span>
+                {LANGUAGE_OPTIONS.find((opt) => opt.value === language)?.label}
+              </span>
             </span>
           )}
         </div>
-        
+
         {readonly && (
-          <span className="text-amber-600 dark:text-amber-400">읽기 전용</span>
+          <span className="text-amber-600 dark:text-amber-400">
+            {t("editor.readonly")}
+          </span>
         )}
       </div>
     </div>

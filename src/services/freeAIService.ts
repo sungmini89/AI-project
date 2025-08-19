@@ -1,57 +1,86 @@
-// AI 서비스 레이어 - 무료 API 티어 관리
+/**
+ * AI 서비스 레이어 - 무료 API 티어 관리
+ * Gemini, Cohere 등의 AI 서비스를 사용하여 코드 분석을 수행
+ * @module services/freeAIService
+ */
 
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import config from '../config';
-import type { 
-  AIServiceConfig, 
-  AIAnalysisResult, 
-  SupportedLanguage, 
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import config from "../config";
+import type {
+  AIServiceConfig,
+  AIAnalysisResult,
+  SupportedLanguage,
   APIError,
-  ServiceStatus
-} from '../types';
+  ServiceStatus,
+} from "../types";
 
+/**
+ * 무료 AI 서비스 클래스
+ * 다양한 AI 제공자(Gemini, Cohere)를 통합하여 코드 분석을 제공
+ * 할당량 관리, 오프라인 폴백, 에러 처리를 포함
+ */
 export class FreeAIService {
+  /** AI 서비스 설정 */
   private config: AIServiceConfig;
+  /** Google Generative AI 인스턴스 */
   private genAI: GoogleGenerativeAI | null = null;
+  /** 할당량 관리자 */
   private quotaManager: QuotaManager;
 
+  /**
+   * AI 서비스 생성자
+   * @param serviceConfig - AI 서비스 설정
+   */
   constructor(serviceConfig: AIServiceConfig) {
     this.config = serviceConfig;
     this.quotaManager = new QuotaManager();
-    
-    if (this.config.mode !== 'offline' && this.config.apiKey) {
+
+    if (this.config.mode !== "offline" && this.config.apiKey) {
       this.initializeProviders();
     }
   }
 
+  /**
+   * AI 제공자 초기화
+   * 설정된 제공자에 따라 AI 서비스를 초기화
+   */
   private initializeProviders(): void {
     try {
-      if (this.config.provider === 'gemini' && this.config.apiKey) {
+      if (this.config.provider === "gemini" && this.config.apiKey) {
         this.genAI = new GoogleGenerativeAI(this.config.apiKey);
       }
     } catch (error) {
-      console.error('AI 서비스 초기화 실패:', error);
+      console.error("AI 서비스 초기화 실패:", error);
     }
   }
 
+  /**
+   * 코드 AI 분석 실행
+   * 설정된 AI 제공자를 사용하여 코드를 분석하고 결과를 반환
+   * @param code - 분석할 코드
+   * @param language - 프로그래밍 언어
+   * @returns AI 분석 결과
+   */
   async analyzeCode(
-    code: string, 
+    code: string,
     language: SupportedLanguage
   ): Promise<AIAnalysisResult> {
     // 오프라인 모드인 경우 오프라인 분석 반환
-    if (this.config.mode === 'offline') {
+    if (this.config.mode === "offline") {
       return this.getOfflineAnalysis(code, language);
     }
 
     // API 사용량 확인
-    const canUseAPI = await this.quotaManager.checkQuota(this.config.provider || 'gemini');
-    
+    const canUseAPI = await this.quotaManager.checkQuota(
+      this.config.provider || "gemini"
+    );
+
     if (!canUseAPI) {
       if (this.config.fallbackToOffline) {
-        console.warn('API 할당량 초과, 오프라인 모드로 전환');
+        console.warn("API 할당량 초과, 오프라인 모드로 전환");
         return this.getOfflineAnalysis(code, language);
       } else {
-        throw new Error('API 할당량이 초과되었습니다. 내일 다시 시도해주세요.');
+        throw new Error("API 할당량이 초과되었습니다. 내일 다시 시도해주세요.");
       }
     }
 
@@ -59,10 +88,10 @@ export class FreeAIService {
       let result: AIAnalysisResult;
 
       switch (this.config.provider) {
-        case 'gemini':
+        case "gemini":
           result = await this.analyzeWithGemini(code, language);
           break;
-        case 'cohere':
+        case "cohere":
           result = await this.analyzeWithCohere(code, language);
           break;
         default:
@@ -70,15 +99,14 @@ export class FreeAIService {
       }
 
       // 사용량 기록
-      await this.quotaManager.recordUsage(this.config.provider || 'gemini');
-      
-      return result;
+      await this.quotaManager.recordUsage(this.config.provider || "gemini");
 
+      return result;
     } catch (error) {
-      console.error('AI 분석 중 오류 발생:', error);
-      
+      console.error("AI 분석 중 오류 발생:", error);
+
       if (this.config.fallbackToOffline) {
-        console.warn('AI API 오류, 오프라인 모드로 전환');
+        console.warn("AI API 오류, 오프라인 모드로 전환");
         return this.getOfflineAnalysis(code, language);
       } else {
         throw this.createAPIError(error as Error);
@@ -86,18 +114,24 @@ export class FreeAIService {
     }
   }
 
+  /**
+   * Gemini를 사용한 코드 분석
+   * @param code - 분석할 코드
+   * @param language - 프로그래밍 언어
+   * @returns Gemini AI 분석 결과
+   */
   private async analyzeWithGemini(
-    code: string, 
+    code: string,
     language: SupportedLanguage
   ): Promise<AIAnalysisResult> {
     if (!this.genAI) {
-      throw new Error('Gemini API가 초기화되지 않았습니다.');
+      throw new Error("Gemini API가 초기화되지 않았습니다.");
     }
 
     const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const prompt = this.createAnalysisPrompt(code, language);
-    
+
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
@@ -105,20 +139,26 @@ export class FreeAIService {
     return this.parseGeminiResponse(text);
   }
 
+  /**
+   * Cohere를 사용한 코드 분석
+   * @param code - 분석할 코드
+   * @param language - 프로그래밍 언어
+   * @returns Cohere AI 분석 결과
+   */
   private async analyzeWithCohere(
-    code: string, 
+    code: string,
     language: SupportedLanguage
   ): Promise<AIAnalysisResult> {
     const prompt = this.createAnalysisPrompt(code, language);
-    
+
     const response = await fetch(`${config.api.cohere.baseUrl}/generate`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.config.apiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'command',
+        model: "command",
         prompt: prompt,
         max_tokens: 1000,
         temperature: 0.3,
@@ -133,7 +173,16 @@ export class FreeAIService {
     return this.parseCohereResponse(data.generations[0].text);
   }
 
-  private createAnalysisPrompt(code: string, language: SupportedLanguage): string {
+  /**
+   * 코드 분석을 위한 AI 프롬프트 생성
+   * @param code - 분석할 코드
+   * @param language - 프로그래밍 언어
+   * @returns AI 프롬프트 문자열
+   */
+  private createAnalysisPrompt(
+    code: string,
+    language: SupportedLanguage
+  ): string {
     return `다음 ${language} 코드를 분석하고 JSON 형식으로 결과를 반환해주세요:
 
 코드:
@@ -169,6 +218,11 @@ ${code}
 한국어로 답변해주세요.`;
   }
 
+  /**
+   * Gemini API 응답 파싱
+   * @param text - Gemini API로부터 받은 텍스트 응답
+   * @returns AI 분석 결과
+   */
   private parseGeminiResponse(text: string): AIAnalysisResult {
     try {
       // JSON 응답 파싱
@@ -176,9 +230,9 @@ ${code}
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         return {
-          provider: 'gemini',
-          model: 'gemini-pro',
-          summary: parsed.summary || '분석 완료',
+          provider: "gemini",
+          model: "gemini-pro",
+          summary: parsed.summary || "분석 완료",
           issues: parsed.issues || [],
           suggestions: parsed.suggestions || [],
           score: parsed.score || 80,
@@ -186,22 +240,27 @@ ${code}
         };
       }
     } catch (error) {
-      console.error('Gemini 응답 파싱 오류:', error);
+      console.error("Gemini 응답 파싱 오류:", error);
     }
 
     // 파싱 실패 시 기본값 반환
-    return this.createFallbackResult('gemini', text);
+    return this.createFallbackResult("gemini", text);
   }
 
+  /**
+   * Cohere API 응답 파싱
+   * @param text - Cohere API로부터 받은 텍스트 응답
+   * @returns AI 분석 결과
+   */
   private parseCohereResponse(text: string): AIAnalysisResult {
     try {
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         return {
-          provider: 'cohere',
-          model: 'command',
-          summary: parsed.summary || '분석 완료',
+          provider: "cohere",
+          model: "command",
+          summary: parsed.summary || "분석 완료",
           issues: parsed.issues || [],
           suggestions: parsed.suggestions || [],
           score: parsed.score || 80,
@@ -209,17 +268,26 @@ ${code}
         };
       }
     } catch (error) {
-      console.error('Cohere 응답 파싱 오류:', error);
+      console.error("Cohere 응답 파싱 오류:", error);
     }
 
-    return this.createFallbackResult('cohere', text);
+    return this.createFallbackResult("cohere", text);
   }
 
-  private createFallbackResult(provider: string, text: string): AIAnalysisResult {
+  /**
+   * 파싱 실패 시 기본 분석 결과 생성
+   * @param provider - AI 제공자
+   * @param text - 파싱되지 않은 텍스트
+   * @returns 기본 분석 결과
+   */
+  private createFallbackResult(
+    provider: string,
+    text: string
+  ): AIAnalysisResult {
     return {
       provider,
-      model: provider === 'gemini' ? 'gemini-pro' : 'command',
-      summary: text.substring(0, 200) + '...',
+      model: provider === "gemini" ? "gemini-pro" : "command",
+      summary: text.substring(0, 200) + "...",
       issues: [],
       suggestions: [],
       score: 75,
@@ -227,79 +295,96 @@ ${code}
     };
   }
 
+  /**
+   * 오프라인 분석 결과 생성
+   * @param code - 분석할 코드
+   * @param _language - 프로그래밍 언어 (사용되지 않음)
+   * @returns 오프라인 분석 결과
+   */
   private getOfflineAnalysis(
-    code: string, 
+    code: string,
     _language: SupportedLanguage
   ): AIAnalysisResult {
     // 오프라인 모드에서는 기본 분석만 제공
-    const lines = code.split('\n').length;
+    const lines = code.split("\n").length;
     const hasConsoleLog = /console\.(log|warn|error)/.test(code);
     const hasVarDeclaration = /\bvar\s+/.test(code);
-    
+
     const issues = [];
     const suggestions = [];
 
     if (hasConsoleLog) {
       issues.push({
-        type: 'style' as const,
-        severity: 'low' as const,
-        message: 'console.log 사용이 감지되었습니다.',
-        explanation: '프로덕션 코드에서는 console.log를 제거하는 것이 좋습니다.',
-        fix: 'console.log 구문을 제거하거나 적절한 로깅 라이브러리를 사용하세요.',
+        type: "style" as const,
+        severity: "low" as const,
+        message: "console.log 사용이 감지되었습니다.",
+        explanation:
+          "프로덕션 코드에서는 console.log를 제거하는 것이 좋습니다.",
+        fix: "console.log 구문을 제거하거나 적절한 로깅 라이브러리를 사용하세요.",
       });
     }
 
     if (hasVarDeclaration) {
       issues.push({
-        type: 'style' as const,
-        severity: 'medium' as const,
-        message: 'var 키워드 사용이 감지되었습니다.',
-        explanation: 'ES6+에서는 let 또는 const 사용을 권장합니다.',
-        fix: 'var를 const 또는 let으로 변경하세요.',
+        type: "style" as const,
+        severity: "medium" as const,
+        message: "var 키워드 사용이 감지되었습니다.",
+        explanation: "ES6+에서는 let 또는 const 사용을 권장합니다.",
+        fix: "var를 const 또는 let으로 변경하세요.",
       });
     }
 
     if (lines > 50) {
       suggestions.push({
-        type: 'refactor' as const,
-        priority: 'medium' as const,
-        description: '함수가 길어 보입니다. 더 작은 함수로 분할을 고려해보세요.',
-        example: '// 큰 함수를 여러 개의 작은 함수로 분할',
+        type: "refactor" as const,
+        priority: "medium" as const,
+        description:
+          "함수가 길어 보입니다. 더 작은 함수로 분할을 고려해보세요.",
+        example: "// 큰 함수를 여러 개의 작은 함수로 분할",
       });
     }
 
     return {
-      provider: 'offline',
-      model: 'static-analysis',
+      provider: "offline",
+      model: "static-analysis",
       summary: `오프라인 분석 완료. ${issues.length}개의 이슈와 ${suggestions.length}개의 제안이 발견되었습니다.`,
       issues,
       suggestions,
-      score: Math.max(100 - (issues.length * 10) - (suggestions.length * 5), 60),
+      score: Math.max(100 - issues.length * 10 - suggestions.length * 5, 60),
       confidence: 0.7,
     };
   }
 
+  /**
+   * API 오류 객체 생성
+   * @param error - 발생한 오류
+   * @returns API 오류 객체
+   */
   private createAPIError(error: Error): APIError {
     return {
-      code: 'API_ERROR',
+      code: "API_ERROR",
       message: error.message,
       provider: this.config.provider,
       details: error,
     };
   }
 
+  /**
+   * 서비스 상태 확인
+   * @returns 서비스 상태 객체
+   */
   async getServiceStatus(): Promise<ServiceStatus> {
-    if (this.config.mode === 'offline') {
+    if (this.config.mode === "offline") {
       return {
         online: true,
-        provider: 'offline',
+        provider: "offline",
         lastCheck: Date.now(),
       };
     }
 
     try {
       const quotaRemaining = await this.quotaManager.getRemainingQuota(
-        this.config.provider || 'gemini'
+        this.config.provider || "gemini"
       );
 
       return {
@@ -318,10 +403,14 @@ ${code}
     }
   }
 
+  /**
+   * 서비스 설정 업데이트
+   * @param newConfig - 새로운 설정
+   */
   updateConfig(newConfig: Partial<AIServiceConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    
-    if (this.config.apiKey && this.config.mode !== 'offline') {
+
+    if (this.config.apiKey && this.config.mode !== "offline") {
       this.initializeProviders();
     }
   }
@@ -329,63 +418,83 @@ ${code}
 
 // 할당량 관리 클래스
 class QuotaManager {
-  private readonly STORAGE_KEY = 'ai_service_quota';
+  private readonly STORAGE_KEY = "ai_service_quota";
 
+  /**
+   * 할당량 사용 가능 여부 확인
+   * @param provider - AI 제공자
+   * @returns 할당량 사용 가능 여부
+   */
   async checkQuota(provider: string): Promise<boolean> {
     const usage = this.getUsageData();
     const today = new Date().toDateString();
     const currentMonth = new Date().toISOString().slice(0, 7);
 
     switch (provider) {
-      case 'gemini':
+      case "gemini":
         const geminiToday = usage.gemini?.daily?.[today] || 0;
         return geminiToday < config.api.gemini.dailyLimit;
-        
-      case 'cohere':
+
+      case "cohere":
         const cohereMonth = usage.cohere?.monthly?.[currentMonth] || 0;
         return cohereMonth < config.api.cohere.monthlyLimit;
-        
+
       default:
         return true;
     }
   }
 
+  /**
+   * 할당량 사용 기록
+   * @param provider - AI 제공자
+   */
   async recordUsage(provider: string): Promise<void> {
     const usage = this.getUsageData();
     const today = new Date().toDateString();
     const currentMonth = new Date().toISOString().slice(0, 7);
 
-    if (provider === 'gemini') {
+    if (provider === "gemini") {
       if (!usage.gemini) usage.gemini = { daily: {}, monthly: {} };
       usage.gemini.daily[today] = (usage.gemini.daily[today] || 0) + 1;
-      usage.gemini.monthly[currentMonth] = (usage.gemini.monthly[currentMonth] || 0) + 1;
-    } else if (provider === 'cohere') {
+      usage.gemini.monthly[currentMonth] =
+        (usage.gemini.monthly[currentMonth] || 0) + 1;
+    } else if (provider === "cohere") {
       if (!usage.cohere) usage.cohere = { daily: {}, monthly: {} };
-      usage.cohere.monthly[currentMonth] = (usage.cohere.monthly[currentMonth] || 0) + 1;
+      usage.cohere.monthly[currentMonth] =
+        (usage.cohere.monthly[currentMonth] || 0) + 1;
     }
 
     this.saveUsageData(usage);
   }
 
+  /**
+   * 남은 할당량 확인
+   * @param provider - AI 제공자
+   * @returns 남은 할당량
+   */
   async getRemainingQuota(provider: string): Promise<number> {
     const usage = this.getUsageData();
     const today = new Date().toDateString();
     const currentMonth = new Date().toISOString().slice(0, 7);
 
     switch (provider) {
-      case 'gemini':
+      case "gemini":
         const geminiUsed = usage.gemini?.daily?.[today] || 0;
         return Math.max(0, config.api.gemini.dailyLimit - geminiUsed);
-        
-      case 'cohere':
+
+      case "cohere":
         const cohereUsed = usage.cohere?.monthly?.[currentMonth] || 0;
         return Math.max(0, config.api.cohere.monthlyLimit - cohereUsed);
-        
+
       default:
         return 0;
     }
   }
 
+  /**
+   * 사용량 데이터 로드
+   * @returns 사용량 데이터
+   */
   private getUsageData(): any {
     try {
       const data = localStorage.getItem(this.STORAGE_KEY);
@@ -395,11 +504,15 @@ class QuotaManager {
     }
   }
 
+  /**
+   * 사용량 데이터 저장
+   * @param data - 저장할 데이터
+   */
   private saveUsageData(data: any): void {
     try {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
     } catch (error) {
-      console.error('사용량 데이터 저장 실패:', error);
+      console.error("사용량 데이터 저장 실패:", error);
     }
   }
 }

@@ -1,22 +1,43 @@
+/**
+ * AI 코드 리뷰어 서비스 워커
+ * PWA 오프라인 지원 및 캐싱 관리
+ *
+ * @file sw.js
+ * @description Progressive Web App을 위한 서비스 워커
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
+ */
+
 // AI 코드 리뷰어 서비스 워커
 // PWA 오프라인 지원 및 캐싱 관리
 
-const CACHE_NAME = 'ai-code-review-v1.0.0';
+/**
+ * 캐시 이름 상수
+ * @constant {string} CACHE_NAME - 메인 캐시 이름
+ * @constant {string} STATIC_CACHE_NAME - 정적 파일 캐시 이름
+ * @constant {string} DYNAMIC_CACHE_NAME - 동적 콘텐츠 캐시 이름
+ */
+const CACHE_NAME = "ai-code-review-v1.0.0";
 const STATIC_CACHE_NAME = `${CACHE_NAME}-static`;
 const DYNAMIC_CACHE_NAME = `${CACHE_NAME}-dynamic`;
 
-// 캐시할 정적 파일들
+/**
+ * 캐시할 정적 파일 목록
+ * @constant {string[]} STATIC_FILES - 기본적으로 캐시할 파일 경로들
+ */
 const STATIC_FILES = [
-  '/',
-  '/index.html',
-  '/offline',
-  '/analyze',
-  '/settings',
-  '/manifest.json',
+  "/",
+  "/index.html",
+  "/offline",
+  "/analyze",
+  "/settings",
+  "/manifest.json",
   // Vite 빌드 결과물들은 런타임에 추가됩니다
 ];
 
-// 캐시하지 않을 URL 패턴
+/**
+ * 캐시하지 않을 URL 패턴
+ * @constant {RegExp[]} EXCLUDE_URLS - 캐시에서 제외할 URL 패턴들
+ */
 const EXCLUDE_URLS = [
   /^https:\/\/api\.cohere\.ai/,
   /^https:\/\/generativelanguage\.googleapis\.com/,
@@ -25,7 +46,10 @@ const EXCLUDE_URLS = [
   /\/workbox-/,
 ];
 
-// 오프라인 페이지 HTML
+/**
+ * 오프라인 페이지 HTML
+ * @constant {string} OFFLINE_HTML - 오프라인 상태에서 표시할 HTML
+ */
 const OFFLINE_HTML = `
 <!DOCTYPE html>
 <html lang="ko">
@@ -104,213 +128,255 @@ const OFFLINE_HTML = `
 </html>
 `;
 
-// 서비스 워커 설치
-self.addEventListener('install', (event) => {
-  console.log('[SW] 서비스 워커 설치 중...');
-  
+/**
+ * 서비스 워커 설치 이벤트 처리
+ * 정적 파일과 오프라인 페이지를 캐시에 저장
+ */
+self.addEventListener("install", (event) => {
+  console.log("[SW] 서비스 워커 설치 중...");
+
   event.waitUntil(
     Promise.all([
       // 정적 파일 캐시
       caches.open(STATIC_CACHE_NAME).then((cache) => {
-        console.log('[SW] 정적 파일 캐싱 중...');
+        console.log("[SW] 정적 파일 캐싱 중...");
         return cache.addAll(STATIC_FILES);
       }),
-      
+
       // 오프라인 페이지 캐시
       caches.open(DYNAMIC_CACHE_NAME).then((cache) => {
-        return cache.put('/offline.html', new Response(OFFLINE_HTML, {
-          headers: { 'Content-Type': 'text/html' }
-        }));
-      })
+        return cache.put(
+          "/offline.html",
+          new Response(OFFLINE_HTML, {
+            headers: { "Content-Type": "text/html" },
+          })
+        );
+      }),
     ]).then(() => {
-      console.log('[SW] 설치 완료');
+      console.log("[SW] 설치 완료");
       return self.skipWaiting();
     })
   );
 });
 
-// 서비스 워커 활성화
-self.addEventListener('activate', (event) => {
-  console.log('[SW] 서비스 워커 활성화 중...');
-  
+/**
+ * 서비스 워커 활성화 이벤트 처리
+ * 이전 캐시를 정리하고 새 서비스 워커를 활성화
+ */
+self.addEventListener("activate", (event) => {
+  console.log("[SW] 서비스 워커 활성화 중...");
+
   event.waitUntil(
     Promise.all([
       // 이전 캐시 정리
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter(cacheName => 
-              cacheName.startsWith('ai-code-review-') && 
-              !cacheName.startsWith(CACHE_NAME)
+            .filter(
+              (cacheName) =>
+                cacheName.startsWith("ai-code-review-") &&
+                !cacheName.startsWith(CACHE_NAME)
             )
-            .map(cacheName => {
-              console.log('[SW] 이전 캐시 삭제:', cacheName);
+            .map((cacheName) => {
+              console.log("[SW] 이전 캐시 삭제:", cacheName);
               return caches.delete(cacheName);
             })
         );
       }),
-      
+
       // 모든 클라이언트에서 새 서비스 워커 활성화
-      self.clients.claim()
+      self.clients.claim(),
     ]).then(() => {
-      console.log('[SW] 활성화 완료');
+      console.log("[SW] 활성화 완료");
     })
   );
 });
 
-// Fetch 이벤트 처리
-self.addEventListener('fetch', (event) => {
+/**
+ * Fetch 이벤트 처리
+ * 모든 네트워크 요청을 가로채서 캐싱 전략 적용
+ */
+self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // 캐시하지 않을 URL 제외
-  if (EXCLUDE_URLS.some(pattern => pattern.test(request.url))) {
+  if (EXCLUDE_URLS.some((pattern) => pattern.test(request.url))) {
     return fetch(request);
   }
-  
+
   // GET 요청만 캐시
-  if (request.method !== 'GET') {
+  if (request.method !== "GET") {
     return fetch(request);
   }
-  
-  event.respondWith(
-    handleRequest(request)
-  );
+
+  event.respondWith(handleRequest(request));
 });
 
-// 요청 처리 함수
+/**
+ * 요청 처리 메인 함수
+ * 요청 유형에 따라 적절한 처리 함수 호출
+ *
+ * @param {Request} request - 처리할 요청 객체
+ * @returns {Promise<Response>} 응답 객체
+ */
 async function handleRequest(request) {
   const url = new URL(request.url);
-  
+
   try {
     // 네비게이션 요청 (페이지 이동)
-    if (request.mode === 'navigate') {
+    if (request.mode === "navigate") {
       return handleNavigateRequest(request);
     }
-    
+
     // 정적 리소스 요청
     if (isStaticAsset(url.pathname)) {
       return handleStaticRequest(request);
     }
-    
+
     // API 요청
     if (isAPIRequest(url)) {
       return handleAPIRequest(request);
     }
-    
+
     // 기타 요청
     return handleOtherRequest(request);
-    
   } catch (error) {
-    console.error('[SW] 요청 처리 오류:', error);
+    console.error("[SW] 요청 처리 오류:", error);
     return handleOfflineResponse(request);
   }
 }
 
-// 네비게이션 요청 처리 (SPA 라우팅)
+/**
+ * 네비게이션 요청 처리 (SPA 라우팅)
+ * 페이지 이동 요청을 처리하고 캐싱 전략 적용
+ *
+ * @param {Request} request - 네비게이션 요청
+ * @returns {Promise<Response>} 응답 객체
+ */
 async function handleNavigateRequest(request) {
   try {
     // 네트워크 우선 시도
     const response = await fetch(request);
-    
+
     if (response.ok) {
       // 성공한 응답을 캐시에 저장
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, response.clone());
       return response;
     }
-    
-    throw new Error('Network response not ok');
-    
+
+    throw new Error("Network response not ok");
   } catch (error) {
     // 오프라인이거나 네트워크 오류인 경우
-    console.log('[SW] 네트워크 오류, 캐시에서 응답:', request.url);
-    
+    console.log("[SW] 네트워크 오류, 캐시에서 응답:", request.url);
+
     // 캐시에서 index.html 반환 (SPA 지원)
     const cache = await caches.open(STATIC_CACHE_NAME);
-    const cachedResponse = await cache.match('/index.html');
-    
+    const cachedResponse = await cache.match("/index.html");
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // 캐시도 없으면 오프라인 페이지 반환
-    return caches.match('/offline.html');
+    return caches.match("/offline.html");
   }
 }
 
-// 정적 리소스 요청 처리
+/**
+ * 정적 리소스 요청 처리
+ * CSS, JS, 이미지 등 정적 파일의 캐싱 전략 적용
+ *
+ * @param {Request} request - 정적 리소스 요청
+ * @returns {Promise<Response>} 응답 객체
+ */
 async function handleStaticRequest(request) {
   // 캐시 우선 전략
   const cachedResponse = await caches.match(request);
-  
+
   if (cachedResponse) {
     // 백그라운드에서 업데이트 확인
-    fetch(request).then(async (response) => {
-      if (response.ok) {
-        const cache = await caches.open(STATIC_CACHE_NAME);
-        cache.put(request, response);
-      }
-    }).catch(() => {}); // 백그라운드 업데이트 실패는 무시
-    
+    fetch(request)
+      .then(async (response) => {
+        if (response.ok) {
+          const cache = await caches.open(STATIC_CACHE_NAME);
+          cache.put(request, response);
+        }
+      })
+      .catch(() => {}); // 백그라운드 업데이트 실패는 무시
+
     return cachedResponse;
   }
-  
+
   // 캐시에 없으면 네트워크에서 가져와서 캐시
   try {
     const response = await fetch(request);
-    
+
     if (response.ok) {
       const cache = await caches.open(STATIC_CACHE_NAME);
       cache.put(request, response.clone());
     }
-    
+
     return response;
-    
   } catch (error) {
     // 오프라인인 경우 대체 응답
-    return new Response('오프라인 상태입니다.', {
+    return new Response("오프라인 상태입니다.", {
       status: 503,
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   }
 }
 
-// API 요청 처리
+/**
+ * API 요청 처리
+ * AI API 호출 등 외부 API 요청의 캐싱 전략 적용
+ *
+ * @param {Request} request - API 요청
+ * @returns {Promise<Response>} 응답 객체
+ */
 async function handleAPIRequest(request) {
   try {
     // API 요청은 항상 네트워크 우선
     const response = await fetch(request);
-    
+
     // 성공한 응답은 동적 캐시에 저장 (짧은 시간)
     if (response.ok) {
       const cache = await caches.open(DYNAMIC_CACHE_NAME);
       cache.put(request, response.clone());
     }
-    
+
     return response;
-    
   } catch (error) {
     // 오프라인인 경우 캐시에서 찾아보기
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // API 오프라인 응답
-    return new Response(JSON.stringify({
-      error: 'offline',
-      message: '오프라인 상태입니다. 기본 분석 기능을 사용해주세요.',
-      fallback: true
-    }), {
-      status: 503,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({
+        error: "offline",
+        message: "오프라인 상태입니다. 기본 분석 기능을 사용해주세요.",
+        fallback: true,
+      }),
+      {
+        status: 503,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
 
-// 기타 요청 처리
+/**
+ * 기타 요청 처리
+ * 위에서 분류되지 않은 요청들을 처리
+ *
+ * @param {Request} request - 처리할 요청
+ * @returns {Promise<Response>} 응답 객체
+ */
 async function handleOtherRequest(request) {
   // 네트워크 우선 시도
   try {
@@ -322,71 +388,100 @@ async function handleOtherRequest(request) {
   }
 }
 
-// 오프라인 응답 처리
+/**
+ * 오프라인 응답 처리
+ * 네트워크 오류 시 적절한 오프라인 응답 생성
+ *
+ * @param {Request} request - 원본 요청
+ * @returns {Promise<Response>} 오프라인 응답
+ */
 async function handleOfflineResponse(request) {
-  if (request.mode === 'navigate') {
-    return caches.match('/offline.html');
+  if (request.mode === "navigate") {
+    return caches.match("/offline.html");
   }
-  
-  return new Response('오프라인 상태입니다.', {
+
+  return new Response("오프라인 상태입니다.", {
     status: 503,
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' }
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }
 
-// 유틸리티 함수들
+/**
+ * 유틸리티 함수들
+ */
+
+/**
+ * 정적 자산인지 확인
+ *
+ * @param {string} pathname - 파일 경로
+ * @returns {boolean} 정적 자산 여부
+ */
 function isStaticAsset(pathname) {
   return /\\.(js|css|png|jpg|jpeg|gif|svg|woff2?|ttf|eot|ico)$/i.test(pathname);
 }
 
+/**
+ * API 요청인지 확인
+ *
+ * @param {URL} url - 요청 URL
+ * @returns {boolean} API 요청 여부
+ */
 function isAPIRequest(url) {
-  return url.hostname !== location.hostname || 
-         url.pathname.startsWith('/api/');
+  return url.hostname !== location.hostname || url.pathname.startsWith("/api/");
 }
 
-// 백그라운드 동기화 (미래 확장용)
-self.addEventListener('sync', (event) => {
-  console.log('[SW] 백그라운드 동기화:', event.tag);
-  
-  if (event.tag === 'background-sync') {
+/**
+ * 백그라운드 동기화 이벤트 처리 (미래 확장용)
+ * 오프라인에서 저장된 작업들을 처리
+ */
+self.addEventListener("sync", (event) => {
+  console.log("[SW] 백그라운드 동기화:", event.tag);
+
+  if (event.tag === "background-sync") {
     event.waitUntil(doBackgroundSync());
   }
 });
 
+/**
+ * 백그라운드 동기화 실행
+ * 오프라인에서 저장된 작업들을 처리
+ */
 async function doBackgroundSync() {
   // 오프라인에서 저장된 작업들을 처리
-  console.log('[SW] 백그라운드 동기화 실행');
+  console.log("[SW] 백그라운드 동기화 실행");
 }
 
-// 푸시 알림 처리 (미래 확장용)
-self.addEventListener('push', (event) => {
+/**
+ * 푸시 알림 이벤트 처리 (미래 확장용)
+ * 서버에서 전송된 푸시 알림을 표시
+ */
+self.addEventListener("push", (event) => {
   if (!event.data) return;
-  
+
   const data = event.data.json();
   const options = {
     body: data.body,
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-96x96.png',
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/icon-96x96.png",
     vibrate: [100, 50, 100],
     data: {
-      url: data.url || '/'
-    }
+      url: data.url || "/",
+    },
   };
-  
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
 });
 
-// 알림 클릭 처리
-self.addEventListener('notificationclick', (event) => {
+/**
+ * 알림 클릭 이벤트 처리
+ * 사용자가 푸시 알림을 클릭했을 때 적절한 페이지로 이동
+ */
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  
-  const url = event.notification.data?.url || '/';
-  
-  event.waitUntil(
-    clients.openWindow(url)
-  );
+
+  const url = event.notification.data?.url || "/";
+
+  event.waitUntil(clients.openWindow(url));
 });
 
-console.log('[SW] AI 코드 리뷰어 서비스 워커가 로드되었습니다.');
+console.log("[SW] AI 코드 리뷰어 서비스 워커가 로드되었습니다.");

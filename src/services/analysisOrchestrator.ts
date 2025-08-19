@@ -1,10 +1,14 @@
-// 코드 분석 오케스트레이터 - 모든 분석 서비스를 통합 관리
+/**
+ * 코드 분석 오케스트레이터 - 모든 분석 서비스를 통합 관리
+ * ESLint, Prettier, 복잡도 분석, 보안 분석, AI 분석을 통합하여 실행
+ * @module services/analysisOrchestrator
+ */
 
-import FreeAIService from './freeAIService';
-import MockAIService from './mockService';
-import OfflineAnalysisService from './offlineService';
-import FormattingService from './formattingService';
-import config from '../config';
+import FreeAIService from "./freeAIService";
+import MockAIService from "./mockService";
+import OfflineAnalysisService from "./offlineService";
+import FormattingService from "./formattingService";
+import config from "../config";
 
 import type {
   CodeAnalysis,
@@ -14,36 +18,58 @@ import type {
   ComplexityAnalysis,
   SecurityAnalysis,
   AIAnalysisResult,
-  PrettierResult
-} from '../types';
+  PrettierResult,
+} from "../types";
 
+/**
+ * 코드 분석 오케스트레이터 클래스
+ * 다양한 분석 서비스를 통합하여 종합적인 코드 분석을 제공
+ */
 export class AnalysisOrchestrator {
+  /** AI 분석 서비스 (실제 또는 목) */
   private aiService!: FreeAIService | MockAIService;
+  /** 오프라인 분석 서비스 */
   private offlineService: OfflineAnalysisService;
+  /** 코드 포맷팅 서비스 */
   private formattingService: FormattingService;
+  /** 현재 AI 서비스 설정 */
   private currentConfig: AIServiceConfig;
 
+  /**
+   * 오케스트레이터 생성자
+   * @param serviceConfig - AI 서비스 설정
+   */
   constructor(serviceConfig: AIServiceConfig) {
     this.currentConfig = serviceConfig;
     this.offlineService = new OfflineAnalysisService();
     this.formattingService = FormattingService.getInstance();
-    
+
     // AI 서비스 초기화
     this.initializeAIService();
   }
 
+  /**
+   * AI 서비스 초기화
+   * 설정에 따라 실제 또는 목 AI 서비스를 선택
+   */
   private initializeAIService(): void {
-    if (config.dev.useMockData || this.currentConfig.mode === 'mock') {
+    if (config.dev.useMockData || this.currentConfig.mode === "mock") {
       this.aiService = new MockAIService();
-      console.log('Mock AI 서비스로 초기화됨');
+      console.log("Mock AI 서비스로 초기화됨");
     } else {
       this.aiService = new FreeAIService(this.currentConfig);
-      console.log(`실제 AI 서비스로 초기화됨 (모드: ${this.currentConfig.mode})`);
+      console.log(
+        `실제 AI 서비스로 초기화됨 (모드: ${this.currentConfig.mode})`
+      );
     }
   }
 
   /**
    * 종합적인 코드 분석 실행
+   * @param code - 분석할 코드
+   * @param language - 프로그래밍 언어
+   * @param options - 분석 옵션들
+   * @returns 코드 분석 결과
    */
   async analyzeCode(
     code: string,
@@ -60,14 +86,16 @@ export class AnalysisOrchestrator {
       includeESLint = true,
       includeComplexity = true,
       includeSecurity = true,
-      includeAI = this.currentConfig.mode !== 'offline',
-      includePrettier = true
+      includeAI = this.currentConfig.mode !== "offline",
+      includePrettier = true,
     } = options;
 
     const analysisId = this.generateAnalysisId();
     const timestamp = Date.now();
 
-    console.log(`코드 분석 시작: ${analysisId} (언어: ${language}, 모드: ${this.currentConfig.mode})`);
+    console.log(
+      `코드 분석 시작: ${analysisId} (언어: ${language}, 모드: ${this.currentConfig.mode})`
+    );
 
     // 기본 분석 객체 생성
     const analysis: CodeAnalysis = {
@@ -76,7 +104,7 @@ export class AnalysisOrchestrator {
       language,
       code,
       results: {},
-      mode: this.currentConfig.mode
+      mode: this.currentConfig.mode,
     };
 
     try {
@@ -87,8 +115,10 @@ export class AnalysisOrchestrator {
       if (includeESLint) {
         analysisPromises.push(
           this.runESLintAnalysis(code, language)
-            .then(results => { analysis.results.eslint = results; })
-            .catch(error => console.warn('ESLint 분석 실패:', error))
+            .then((results) => {
+              analysis.results.eslint = results;
+            })
+            .catch((error) => console.warn("ESLint 분석 실패:", error))
         );
       }
 
@@ -96,8 +126,10 @@ export class AnalysisOrchestrator {
       if (includeComplexity) {
         analysisPromises.push(
           this.runComplexityAnalysis(code, language)
-            .then(results => { analysis.results.complexity = results; })
-            .catch(error => console.warn('복잡도 분석 실패:', error))
+            .then((results) => {
+              analysis.results.complexity = results;
+            })
+            .catch((error) => console.warn("복잡도 분석 실패:", error))
         );
       }
 
@@ -105,17 +137,24 @@ export class AnalysisOrchestrator {
       if (includeSecurity) {
         analysisPromises.push(
           this.runSecurityAnalysis(code, language)
-            .then(results => { analysis.results.security = results; })
-            .catch(error => console.warn('보안 분석 실패:', error))
+            .then((results) => {
+              analysis.results.security = results;
+            })
+            .catch((error) => console.warn("보안 분석 실패:", error))
         );
       }
 
       // Prettier 포맷팅
-      if (includePrettier && this.formattingService.isLanguageSupported(language)) {
+      if (
+        includePrettier &&
+        this.formattingService.isLanguageSupported(language)
+      ) {
         analysisPromises.push(
           this.runPrettierAnalysis(code, language)
-            .then(results => { analysis.results.prettier = results; })
-            .catch(error => console.warn('Prettier 분석 실패:', error))
+            .then((results) => {
+              analysis.results.prettier = results;
+            })
+            .catch((error) => console.warn("Prettier 분석 실패:", error))
         );
       }
 
@@ -125,14 +164,14 @@ export class AnalysisOrchestrator {
       // AI 분석 (순차 실행 - API 호출 제한 고려)
       if (includeAI) {
         try {
-          console.log('AI 분석 시작...');
+          console.log("AI 분석 시작...");
           analysis.results.ai = await this.runAIAnalysis(code, language);
-          console.log('AI 분석 완료');
+          console.log("AI 분석 완료");
         } catch (error) {
-          console.warn('AI 분석 실패:', error);
+          console.warn("AI 분석 실패:", error);
           // AI 분석 실패 시 오프라인 대안 제공
           if (this.currentConfig.fallbackToOffline) {
-            console.log('오프라인 대안 분석으로 전환');
+            console.log("오프라인 대안 분석으로 전환");
             const mockService = new MockAIService();
             analysis.results.ai = await mockService.analyzeCode(code, language);
           }
@@ -141,10 +180,11 @@ export class AnalysisOrchestrator {
 
       console.log(`코드 분석 완료: ${analysisId}`);
       return analysis;
-
     } catch (error) {
-      console.error('코드 분석 중 치명적 오류:', error);
-      throw new Error(`분석 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+      console.error("코드 분석 중 치명적 오류:", error);
+      throw new Error(
+        `분석 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`
+      );
     }
   }
 
@@ -154,28 +194,27 @@ export class AnalysisOrchestrator {
   async analyzeCodeRealtime(
     code: string,
     language: SupportedLanguage
-  ): Promise<Partial<CodeAnalysis['results']>> {
-    const results: Partial<CodeAnalysis['results']> = {};
+  ): Promise<Partial<CodeAnalysis["results"]>> {
+    const results: Partial<CodeAnalysis["results"]> = {};
 
     try {
       // 가벼운 분석만 실행
       const [eslintResults, complexityResults] = await Promise.allSettled([
         this.runESLintAnalysis(code, language),
-        this.runComplexityAnalysis(code, language)
+        this.runComplexityAnalysis(code, language),
       ]);
 
-      if (eslintResults.status === 'fulfilled') {
+      if (eslintResults.status === "fulfilled") {
         results.eslint = eslintResults.value;
       }
 
-      if (complexityResults.status === 'fulfilled') {
+      if (complexityResults.status === "fulfilled") {
         results.complexity = complexityResults.value;
       }
 
       return results;
-
     } catch (error) {
-      console.warn('실시간 분석 오류:', error);
+      console.warn("실시간 분석 오류:", error);
       return results;
     }
   }
@@ -235,15 +274,15 @@ export class AnalysisOrchestrator {
    */
   updateConfig(newConfig: Partial<AIServiceConfig>): void {
     this.currentConfig = { ...this.currentConfig, ...newConfig };
-    
+
     // AI 서비스 재초기화
     this.initializeAIService();
-    
+
     if (this.aiService instanceof FreeAIService) {
       this.aiService.updateConfig(newConfig);
     }
-    
-    console.log('분석 설정 업데이트됨:', this.currentConfig);
+
+    console.log("분석 설정 업데이트됨:", this.currentConfig);
   }
 
   /**
@@ -255,11 +294,15 @@ export class AnalysisOrchestrator {
     formatting: { available: boolean };
   }> {
     const offlineStatus = { available: true };
-    
+
     const formattingStatus = { available: true };
-    
-    let aiStatus: { available: boolean; provider?: string; quotaRemaining?: number } = {
-      available: false
+
+    let aiStatus: {
+      available: boolean;
+      provider?: string;
+      quotaRemaining?: number;
+    } = {
+      available: false,
     };
 
     try {
@@ -267,23 +310,26 @@ export class AnalysisOrchestrator {
       aiStatus = {
         available: status.online,
         provider: status.provider,
-        quotaRemaining: status.quotaRemaining
+        quotaRemaining: status.quotaRemaining,
       };
     } catch (error) {
-      console.warn('AI 서비스 상태 확인 실패:', error);
+      console.warn("AI 서비스 상태 확인 실패:", error);
     }
 
     return {
       offline: offlineStatus,
       ai: aiStatus,
-      formatting: formattingStatus
+      formatting: formattingStatus,
     };
   }
 
   /**
    * 코드 포맷팅
    */
-  async formatCode(code: string, language: SupportedLanguage): Promise<PrettierResult> {
+  async formatCode(
+    code: string,
+    language: SupportedLanguage
+  ): Promise<PrettierResult> {
     return this.formattingService.formatCode(code, language);
   }
 
@@ -312,26 +358,32 @@ export class AnalysisOrchestrator {
     const aiIssues = analysis.results.ai?.issues || [];
 
     const criticalIssues = [
-      ...eslintIssues.filter(i => i.severity === 'error'),
-      ...securityIssues.filter(i => i.severity === 'critical'),
-      ...aiIssues.filter(i => i.severity === 'critical')
+      ...eslintIssues.filter((i) => i.severity === "error"),
+      ...securityIssues.filter((i) => i.severity === "critical"),
+      ...aiIssues.filter((i) => i.severity === "critical"),
     ].length;
 
     const warningIssues = [
-      ...eslintIssues.filter(i => i.severity === 'warning'),
-      ...securityIssues.filter(i => i.severity === 'high' || i.severity === 'medium'),
-      ...aiIssues.filter(i => i.severity === 'high' || i.severity === 'medium')
+      ...eslintIssues.filter((i) => i.severity === "warning"),
+      ...securityIssues.filter(
+        (i) => i.severity === "high" || i.severity === "medium"
+      ),
+      ...aiIssues.filter(
+        (i) => i.severity === "high" || i.severity === "medium"
+      ),
     ].length;
 
     const infoIssues = [
-      ...eslintIssues.filter(i => i.severity === 'info'),
-      ...securityIssues.filter(i => i.severity === 'low'),
-      ...aiIssues.filter(i => i.severity === 'low')
+      ...eslintIssues.filter((i) => i.severity === "info"),
+      ...securityIssues.filter((i) => i.severity === "low"),
+      ...aiIssues.filter((i) => i.severity === "low"),
     ].length;
 
     const totalIssues = criticalIssues + warningIssues + infoIssues;
 
-    const complexityScore = this.calculateComplexityScore(analysis.results.complexity);
+    const complexityScore = this.calculateComplexityScore(
+      analysis.results.complexity
+    );
     const securityScore = analysis.results.security?.score || 100;
     const aiScore = analysis.results.ai?.score || 80;
 
@@ -347,7 +399,7 @@ export class AnalysisOrchestrator {
       complexityScore,
       securityScore,
       aiScore,
-      overallScore
+      overallScore,
     };
   }
 

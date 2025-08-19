@@ -1,19 +1,27 @@
-// UI 상태 관리 스토어
+/**
+ * UI 상태 관리 스토어
+ * 사이드바, 패널, 모달, 알림, 로딩 상태 등 UI 관련 상태를 중앙에서 관리
+ * @module stores/uiStore
+ */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
+/**
+ * UI 상태 인터페이스
+ * 레이아웃, 패널, 모달, 알림, 로딩 상태와 관련 액션들을 정의
+ */
 interface UIState {
-  // 레이아웃 상태
+  /** 레이아웃 상태 */
   sidebarOpen: boolean;
   sidebarCollapsed: boolean;
-  
-  // 패널 상태
+
+  /** 패널 상태 */
   analysisPanelOpen: boolean;
   historyPanelOpen: boolean;
   settingsPanelOpen: boolean;
-  
-  // 모달 상태
+
+  /** 모달 상태 */
   modals: {
     apiSettings: boolean;
     about: boolean;
@@ -21,55 +29,61 @@ interface UIState {
     export: boolean;
     import: boolean;
   };
-  
-  // 알림 상태
+
+  /** 알림 상태 */
   notifications: Array<{
     id: string;
-    type: 'info' | 'success' | 'warning' | 'error';
+    type: "info" | "success" | "warning" | "error";
     title: string;
     message: string;
     timestamp: number;
     autoClose?: boolean;
     duration?: number;
   }>;
-  
-  // 로딩 상태
+
+  /** 로딩 상태 */
   loadingStates: {
     [key: string]: boolean;
   };
-  
-  // 액션들
+
+  /** 액션들 */
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
   toggleSidebarCollapsed: () => void;
-  
+
   toggleAnalysisPanel: () => void;
   setAnalysisPanelOpen: (open: boolean) => void;
-  
+
   toggleHistoryPanel: () => void;
   setHistoryPanelOpen: (open: boolean) => void;
-  
+
   toggleSettingsPanel: () => void;
   setSettingsPanelOpen: (open: boolean) => void;
-  
-  // 모달 관리
-  openModal: (modalName: keyof UIState['modals']) => void;
-  closeModal: (modalName: keyof UIState['modals']) => void;
+
+  /** 모달 관리 */
+  openModal: (modalName: keyof UIState["modals"]) => void;
+  closeModal: (modalName: keyof UIState["modals"]) => void;
   closeAllModals: () => void;
-  
-  // 알림 관리
-  addNotification: (notification: Omit<UIState['notifications'][0], 'id' | 'timestamp'>) => void;
+
+  /** 알림 관리 */
+  addNotification: (
+    notification: Omit<UIState["notifications"][0], "id" | "timestamp">
+  ) => void;
   removeNotification: (id: string) => void;
   clearNotifications: () => void;
-  
-  // 로딩 상태 관리
+
+  /** 로딩 상태 관리 */
   setLoading: (key: string, loading: boolean) => void;
   isLoading: (key: string) => boolean;
-  
-  // 유틸리티
+
+  /** 유틸리티 */
   resetUI: () => void;
 }
 
+/**
+ * UI 상태 관리 스토어
+ * Zustand를 사용하여 UI 관련 상태를 관리하고 로컬 스토리지에 지속
+ */
 export const useUIStore = create<UIState>()(
   persist(
     (set, get) => ({
@@ -79,7 +93,7 @@ export const useUIStore = create<UIState>()(
       analysisPanelOpen: true,
       historyPanelOpen: false,
       settingsPanelOpen: false,
-      
+
       modals: {
         apiSettings: false,
         about: false,
@@ -87,15 +101,22 @@ export const useUIStore = create<UIState>()(
         export: false,
         import: false,
       },
-      
+
       notifications: [],
       loadingStates: {},
 
-      // 사이드바 관리
+      /**
+       * 사이드바 관리
+       * 사이드바 토글
+       */
       toggleSidebar: () => {
         set((state) => ({ sidebarOpen: !state.sidebarOpen }));
       },
 
+      /**
+       * 사이드바 열기/닫기 설정
+       * @param open - 사이드바 열기 여부
+       */
       setSidebarOpen: (open: boolean) => {
         set({ sidebarOpen: open });
       },
@@ -132,21 +153,21 @@ export const useUIStore = create<UIState>()(
       },
 
       // 모달 관리
-      openModal: (modalName: keyof UIState['modals']) => {
+      openModal: (modalName: keyof UIState["modals"]) => {
         set((state) => ({
           modals: {
             ...state.modals,
-            [modalName]: true
-          }
+            [modalName]: true,
+          },
         }));
       },
 
-      closeModal: (modalName: keyof UIState['modals']) => {
+      closeModal: (modalName: keyof UIState["modals"]) => {
         set((state) => ({
           modals: {
             ...state.modals,
-            [modalName]: false
-          }
+            [modalName]: false,
+          },
         }));
       },
 
@@ -158,7 +179,7 @@ export const useUIStore = create<UIState>()(
             help: false,
             export: false,
             import: false,
-          }
+          },
         });
       },
 
@@ -174,7 +195,7 @@ export const useUIStore = create<UIState>()(
         };
 
         set((state) => ({
-          notifications: [...state.notifications, newNotification]
+          notifications: [...state.notifications, newNotification],
         }));
 
         // 자동 제거
@@ -187,7 +208,7 @@ export const useUIStore = create<UIState>()(
 
       removeNotification: (id: string) => {
         set((state) => ({
-          notifications: state.notifications.filter(n => n.id !== id)
+          notifications: state.notifications.filter((n) => n.id !== id),
         }));
       },
 
@@ -200,8 +221,8 @@ export const useUIStore = create<UIState>()(
         set((state) => ({
           loadingStates: {
             ...state.loadingStates,
-            [key]: loading
-          }
+            [key]: loading,
+          },
         }));
       },
 
@@ -228,10 +249,10 @@ export const useUIStore = create<UIState>()(
           notifications: [],
           loadingStates: {},
         });
-      }
+      },
     }),
     {
-      name: 'ui-store',
+      name: "ui-store",
       partialize: (state) => ({
         // 레이아웃 상태만 영속화
         sidebarOpen: state.sidebarOpen,
@@ -239,7 +260,7 @@ export const useUIStore = create<UIState>()(
         analysisPanelOpen: state.analysisPanelOpen,
         historyPanelOpen: state.historyPanelOpen,
         settingsPanelOpen: state.settingsPanelOpen,
-      })
+      }),
     }
   )
 );
