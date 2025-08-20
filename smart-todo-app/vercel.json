@@ -1,0 +1,66 @@
+{
+  "build": {
+    "env": {
+      "VITE_USE_MOCK_DATA": "@vite-use-mock-data",
+      "VITE_API_MODE": "@vite-api-mode",
+      "VITE_HUGGINGFACE_TOKEN": "@vite-huggingface-token",
+      "VITE_GEMINI_API_KEY": "@vite-gemini-api-key",
+      "VITE_APP_NAME": "@vite-app-name",
+      "VITE_APP_VERSION": "@vite-app-version",
+      "VITE_PWA_ENABLED": "@vite-pwa-enabled",
+      "VITE_PWA_OFFLINE_SUPPORT": "@vite-pwa-offline-support",
+      "VITE_POMODORO_WORK_TIME": "@vite-pomodoro-work-time",
+      "VITE_POMODORO_SHORT_BREAK": "@vite-pomodoro-short-break",
+      "VITE_POMODORO_LONG_BREAK": "@vite-pomodoro-long-break"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/workbox-*.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ]
+}
