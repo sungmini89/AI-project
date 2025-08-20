@@ -1,0 +1,129 @@
+/**
+ * PWA 매니페스트 파일
+ *
+ * AI 코드 리뷰어의 Progressive Web App 설정
+ * 앱 설치, 홈 화면 추가, 오프라인 기능을 위한 메타데이터
+ *
+ * @file manifest.json
+ * @description AI 기반 코드 품질 분석 및 리뷰 도구의 PWA 매니페스트
+ * @see https://developer.mozilla.org/en-US/docs/Web/Manifest
+ */
+{
+  "name": "AI 코드 리뷰어",
+  "short_name": "AI Code Review",
+  "description": "AI 기반 코드 품질 분석 및 리뷰 도구",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#3b82f6",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ko",
+  "dir": "ltr",
+  "categories": ["productivity", "developer", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "코드 분석",
+      "short_name": "분석",
+      "description": "새로운 코드 분석 시작",
+      "url": "/analyze",
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "오프라인 도구",
+      "short_name": "오프라인",
+      "description": "오프라인 분석 도구 사용",
+      "url": "/offline",
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "설정",
+      "short_name": "설정",
+      "description": "API 및 앱 설정",
+      "url": "/settings",
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-home.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "홈페이지 - 데스크톱"
+    },
+    {
+      "src": "/screenshots/mobile-analyze.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "코드 분석 페이지 - 모바일"
+    }
+  ],
+  "features": ["Cross Platform", "Fast", "Offline Support"]
+}
