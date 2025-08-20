@@ -11,6 +11,7 @@ import HomePage from "./pages/HomePage";
 import AnalyzePage from "./pages/AnalyzePage";
 import OfflinePage from "./pages/OfflinePage";
 import SettingsPage from "./pages/SettingsPage";
+import ApiSettingsPage from "./pages/ApiSettingsPage";
 import NotificationManager from "./components/ui/NotificationManager";
 import ErrorBoundary from "./components/ui/ErrorBoundary";
 
@@ -39,6 +40,7 @@ function App() {
             <Route path="/analyze" element={<AnalyzePage />} />
             <Route path="/offline" element={<OfflinePage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/api-settings" element={<ApiSettingsPage />} />
           </Routes>
 
           {/* 전역 알림 관리자 */}

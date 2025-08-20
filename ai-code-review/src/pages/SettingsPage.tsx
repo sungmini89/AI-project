@@ -274,6 +274,17 @@ export const SettingsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Personal API 버튼 */}
+            <div className="flex justify-end mb-4">
+              <Link
+                to="/api-settings"
+                className="btn-primary px-4 py-2 rounded-lg inline-flex items-center space-x-2"
+              >
+                <span>🔑</span>
+                <span>Personal API</span>
+              </Link>
+            </div>
+
             {/* API 사용량 표시 */}
             {apiMode !== "offline" && (
               <div className="bg-secondary-50 dark:bg-secondary-800 p-4 rounded-lg">
