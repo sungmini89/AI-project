@@ -45,12 +45,16 @@ export const SettingsPage: React.FC = () => {
     gemini: apiKeys.gemini || "",
     cohere: apiKeys.cohere || "",
     huggingface: apiKeys.huggingface || "",
+    openai: apiKeys.openai || "",
+    claude: apiKeys.claude || "",
   });
 
   const [showAPIKeys, setShowAPIKeys] = useState({
     gemini: false,
     cohere: false,
     huggingface: false,
+    openai: false,
+    claude: false,
   });
 
 
@@ -477,25 +481,25 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="space-y-8">
-                {/* Gemini API 설정 */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+                {/* OpenAI API 설정 */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 rounded-lg border border-green-200 dark:border-green-800">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
                       <div className="text-2xl">🤖</div>
                       <div>
-                        <h3 className="font-semibold text-blue-900 dark:text-blue-100">
-                          Google Gemini API
+                        <h3 className="font-semibold text-green-900 dark:text-green-100">
+                          OpenAI API (ChatGPT/GPT-4)
                         </h3>
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                          코드 분석 및 AI 기능에 사용
+                        <p className="text-sm text-green-700 dark:text-green-300">
+                          고급 언어 모델 및 코드 생성에 사용
                         </p>
                       </div>
                     </div>
                     <a
-                      href="https://makersuite.google.com/app/apikey"
+                      href="https://platform.openai.com/api-keys"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      className="text-xs text-green-600 dark:text-green-400 hover:underline"
                     >
                       API 키 발급받기 →
                     </a>
@@ -505,15 +509,15 @@ export const SettingsPage: React.FC = () => {
                     <div className="flex space-x-2">
                       <div className="flex-1 relative">
                         <input
-                          type={showAPIKeys.gemini ? "text" : "password"}
-                          value={localAPIKeys.gemini}
+                          type={showAPIKeys.openai ? "text" : "password"}
+                          value={localAPIKeys.openai}
                           onChange={(e) =>
                             setLocalAPIKeys((prev) => ({
                               ...prev,
-                              gemini: e.target.value,
+                              openai: e.target.value,
                             }))
                           }
-                          placeholder="Google Gemini API 키를 입력하세요"
+                          placeholder="OpenAI API 키를 입력하세요 (sk-...)"
                           className="input-field pr-10"
                         />
                         <button
@@ -521,22 +525,22 @@ export const SettingsPage: React.FC = () => {
                           onClick={() =>
                             setShowAPIKeys((prev) => ({
                               ...prev,
-                              gemini: !prev.gemini,
+                              openai: !prev.openai,
                             }))
                           }
                           className="absolute right-2 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
                         >
-                          {showAPIKeys.gemini ? "🙈" : "👁️"}
+                          {showAPIKeys.openai ? "🙈" : "👁️"}
                         </button>
                       </div>
                       <button
-                        onClick={() => handleSaveAPIKey("gemini")}
+                        onClick={() => handleSaveAPIKey("openai")}
                         className="btn-primary px-4 py-2 rounded-lg"
                       >
                         저장
                       </button>
                       <button
-                        onClick={() => handleTestAPIKey("gemini")}
+                        onClick={() => handleTestAPIKey("openai")}
                         className="btn-secondary px-4 py-2 rounded-lg"
                       >
                         테스트
@@ -544,51 +548,47 @@ export const SettingsPage: React.FC = () => {
                     </div>
 
                     {/* 사용량 표시 */}
-                    <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded">
+                    <div className="bg-green-100 dark:bg-green-900/30 p-3 rounded">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-blue-800 dark:text-blue-200">
-                          오늘 사용량
+                        <span className="text-sm text-green-800 dark:text-green-200">
+                          API 사용량
                         </span>
-                        <span className="text-sm font-mono text-blue-900 dark:text-blue-100">
-                          {getTodayUsage("gemini")} / {config.api.gemini.dailyLimit}
+                        <span className="text-sm font-mono text-green-900 dark:text-green-100">
+                          사용한 만큼 과금
                         </span>
                       </div>
-                      <div className="w-full bg-blue-200 dark:bg-blue-800 rounded-full h-2">
+                      <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
                         <div
-                          className={`h-2 rounded-full transition-all ${
-                            canUseAPI("gemini") ? "bg-blue-500" : "bg-red-500"
-                          }`}
-                          style={{
-                            width: `${Math.min((getTodayUsage("gemini") / config.api.gemini.dailyLimit) * 100, 100)}%`,
-                          }}
+                          className="h-2 rounded-full transition-all bg-green-500"
+                          style={{ width: "0%" }}
                         />
                       </div>
-                      <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                        개인 API 키 사용 - 무제한 요청 가능
+                      <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+                        개인 API 키 - 사용량에 따른 과금 방식
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Cohere API 설정 */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-6 rounded-lg border border-purple-200 dark:border-purple-800">
+                {/* Claude API 설정 */}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 p-6 rounded-lg border border-orange-200 dark:border-orange-800">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-3">
-                      <div className="text-2xl">🚀</div>
+                      <div className="text-2xl">🧠</div>
                       <div>
-                        <h3 className="font-semibold text-purple-900 dark:text-purple-100">
-                          Cohere API
+                        <h3 className="font-semibold text-orange-900 dark:text-orange-100">
+                          Claude API (Anthropic)
                         </h3>
-                        <p className="text-sm text-purple-700 dark:text-purple-300">
-                          텍스트 분석 및 NLP 기능에 사용
+                        <p className="text-sm text-orange-700 dark:text-orange-300">
+                          고급 추론 및 안전한 AI 분석에 사용
                         </p>
                       </div>
                     </div>
                     <a
-                      href="https://dashboard.cohere.ai/api-keys"
+                      href="https://console.anthropic.com/settings/keys"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                      className="text-xs text-orange-600 dark:text-orange-400 hover:underline"
                     >
                       API 키 발급받기 →
                     </a>
@@ -598,15 +598,15 @@ export const SettingsPage: React.FC = () => {
                     <div className="flex space-x-2">
                       <div className="flex-1 relative">
                         <input
-                          type={showAPIKeys.cohere ? "text" : "password"}
-                          value={localAPIKeys.cohere}
+                          type={showAPIKeys.claude ? "text" : "password"}
+                          value={localAPIKeys.claude}
                           onChange={(e) =>
                             setLocalAPIKeys((prev) => ({
                               ...prev,
-                              cohere: e.target.value,
+                              claude: e.target.value,
                             }))
                           }
-                          placeholder="Cohere API 키를 입력하세요"
+                          placeholder="Claude API 키를 입력하세요 (sk-ant-...)"
                           className="input-field pr-10"
                         />
                         <button
@@ -614,22 +614,22 @@ export const SettingsPage: React.FC = () => {
                           onClick={() =>
                             setShowAPIKeys((prev) => ({
                               ...prev,
-                              cohere: !prev.cohere,
+                              claude: !prev.claude,
                             }))
                           }
                           className="absolute right-2 top-1/2 transform -translate-y-1/2 text-secondary-400 hover:text-secondary-600"
                         >
-                          {showAPIKeys.cohere ? "🙈" : "👁️"}
+                          {showAPIKeys.claude ? "🙈" : "👁️"}
                         </button>
                       </div>
                       <button
-                        onClick={() => handleSaveAPIKey("cohere")}
+                        onClick={() => handleSaveAPIKey("claude")}
                         className="btn-primary px-4 py-2 rounded-lg"
                       >
                         저장
                       </button>
                       <button
-                        onClick={() => handleTestAPIKey("cohere")}
+                        onClick={() => handleTestAPIKey("claude")}
                         className="btn-secondary px-4 py-2 rounded-lg"
                       >
                         테스트
@@ -637,23 +637,23 @@ export const SettingsPage: React.FC = () => {
                     </div>
 
                     {/* 사용량 표시 */}
-                    <div className="bg-purple-100 dark:bg-purple-900/30 p-3 rounded">
+                    <div className="bg-orange-100 dark:bg-orange-900/30 p-3 rounded">
                       <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-purple-800 dark:text-purple-200">
-                          이번 달 사용량
+                        <span className="text-sm text-orange-800 dark:text-orange-200">
+                          API 사용량
                         </span>
-                        <span className="text-sm font-mono text-purple-900 dark:text-purple-100">
-                          {getMonthlyUsage("cohere")} / ∞
+                        <span className="text-sm font-mono text-orange-900 dark:text-orange-100">
+                          사용한 만큼 과금
                         </span>
                       </div>
-                      <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                      <div className="w-full bg-orange-200 dark:bg-orange-800 rounded-full h-2">
                         <div
-                          className="h-2 rounded-full transition-all bg-purple-500"
-                          style={{ width: "10%" }}
+                          className="h-2 rounded-full transition-all bg-orange-500"
+                          style={{ width: "0%" }}
                         />
                       </div>
-                      <p className="text-xs text-purple-700 dark:text-purple-300 mt-1">
-                        개인 API 키 사용 - 무제한 요청 가능
+                      <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
+                        개인 API 키 - 사용량에 따른 과금 방식
                       </p>
                     </div>
                   </div>
