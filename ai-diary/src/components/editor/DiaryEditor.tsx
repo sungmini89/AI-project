@@ -1,515 +1,429 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useEditor, EditorContent, BubbleMenu, FloatingMenu } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import { 
-  Bold, 
-  Italic, 
-  List, 
-  ListOrdered, 
-  Quote, 
-  Undo, 
-  Redo,
+import React, { useState, useEffect, useRef } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Placeholder from "@tiptap/extension-placeholder";
+import {
   Save,
   Eye,
   EyeOff,
-  Smile,
-  BarChart3
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { emotionAnalysisService, EmotionAnalysisResult, EmotionType, EMOTION_EMOJIS, EMOTION_COLORS } from '../../services/emotionAnalysisService';
-import { DiaryEntry } from '../../services/databaseService';
+  RotateCcw,
+  Download,
+  Upload,
+  Sparkles,
+} from "lucide-react";
+import { toast } from "react-hot-toast";
+import {
+  emotionAnalysisService,
+  type EmotionAnalysisResult,
+  type EmotionType,
+  EMOTION_EMOJIS,
+  EMOTION_COLORS,
+} from "../../services/emotionAnalysisService";
+import type { DiaryEntry } from "../../services/databaseService";
+import { databaseService } from "../../services/databaseService";
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
 
 interface DiaryEditorProps {
-  initialContent?: string;
-  initialTitle?: string;
-  onSave?: (entry: Partial<DiaryEntry>) => void;
-  onContentChange?: (content: string, htmlContent: string) => void;
-  onTitleChange?: (title: string) => void;
-  autoSave?: boolean;
-  autoSaveInterval?: number;
-  isPreviewMode?: boolean;
+  entry?: DiaryEntry;
+  onSave?: (entry: DiaryEntry) => void;
+  onCancel?: () => void;
   className?: string;
 }
 
-interface EmotionIndicatorProps {
-  emotion: EmotionType;
-  score: number;
-  isActive: boolean;
-}
-
-const EmotionIndicator: React.FC<EmotionIndicatorProps> = ({ emotion, score, isActive }) => {
-  const percentage = Math.round(score * 100);
-  const emoji = EMOTION_EMOJIS[emotion];
-  const color = EMOTION_COLORS[emotion];
-
-  return (
-    <div className={`flex items-center space-x-2 p-2 rounded-lg transition-all ${
-      isActive ? 'bg-gray-100 scale-105' : 'bg-gray-50'
-    }`}>
-      <span className="text-xl">{emoji}</span>
-      <div className="flex-1">
-        <div className="text-xs font-medium text-gray-700 capitalize">{emotion}</div>
-        <div className="w-full bg-gray-200 rounded-full h-1.5">
-          <div 
-            className="h-1.5 rounded-full transition-all duration-300"
-            style={{ 
-              width: `${percentage}%`, 
-              backgroundColor: color 
-            }}
-          />
-        </div>
-        <div className="text-xs text-gray-500">{percentage}%</div>
-      </div>
-    </div>
-  );
-};
-
 const DiaryEditor: React.FC<DiaryEditorProps> = ({
-  initialContent = '',
-  initialTitle = '',
+  entry,
   onSave,
-  onContentChange,
-  onTitleChange,
-  autoSave = true,
-  autoSaveInterval = 30000,
-  isPreviewMode = false,
-  className = ''
+  onCancel,
+  className = "",
 }) => {
-  const [title, setTitle] = useState(initialTitle);
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
-  const [wordCount, setWordCount] = useState(0);
-  const [emotionAnalysis, setEmotionAnalysis] = useState<EmotionAnalysisResult | null>(null);
+  const [content, setContent] = useState("");
+  const [title, setTitle] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showEmotionPanel, setShowEmotionPanel] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [analysisResult, setAnalysisResult] =
+    useState<EmotionAnalysisResult | null>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Tiptap 에디터 초기화
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-      }),
+      StarterKit,
       Placeholder.configure({
-        placeholder: '오늘 하루는 어땠나요? 자유롭게 써보세요...',
-        emptyEditorClass: 'is-editor-empty',
+        placeholder: "오늘 하루는 어땠나요? 자유롭게 작성해보세요...",
       }),
     ],
-    content: initialContent,
-    immediatelyRender: false,
+    content: entry?.content || "",
     onUpdate: ({ editor }) => {
-      const content = editor.getText();
-      const htmlContent = editor.getHTML();
-      
-      // 단어 수 계산
-      const words = content.trim().split(/\s+/).filter(word => word.length > 0);
-      setWordCount(words.length);
-      
-      onContentChange?.(content, htmlContent);
-      
-      // 실시간 감정 분석 (디바운스)
-      if (content.length > 10) {
-        debouncedAnalyze(content);
-      }
-    },
-    editorProps: {
-      attributes: {
-        class: 'prose prose-gray max-w-none focus:outline-none',
-      },
+      setContent(editor.getHTML());
     },
   });
 
-  // 감정 분석 디바운스
-  const debouncedAnalyze = useMemo(
-    () => {
-      let timeoutId: NodeJS.Timeout;
-      return (text: string) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          analyzeEmotion(text);
-        }, 1000);
-      };
-    },
-    []
-  );
-
-  // 감정 분석 실행
-  const analyzeEmotion = useCallback(async (text: string) => {
-    if (!text.trim() || isAnalyzing) return;
-    
-    setIsAnalyzing(true);
-    try {
-      const result = await emotionAnalysisService.analyzeEmotion(text);
-      setEmotionAnalysis(result);
-      setShowEmotionPanel(true);
-    } catch (error) {
-      console.error('감정 분석 실패:', error);
-      toast.error('감정 분석 중 오류가 발생했습니다.');
-    } finally {
-      setIsAnalyzing(false);
+  useEffect(() => {
+    if (entry) {
+      setTitle(entry.title || "");
+      setContent(entry.content || "");
+      setAnalysisResult(entry.emotionAnalysis || null);
     }
-  }, [isAnalyzing]);
+  }, [entry]);
 
-  // 제목 변경 핸들러
-  const handleTitleChange = useCallback((newTitle: string) => {
-    setTitle(newTitle);
-    onTitleChange?.(newTitle);
-  }, [onTitleChange]);
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+  };
 
-  // 태그 추가
-  const handleAddTag = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && tagInput.trim()) {
-      e.preventDefault();
-      const newTag = tagInput.trim();
-      if (!tags.includes(newTag)) {
-        setTags(prev => [...prev, newTag]);
-      }
-      setTagInput('');
-    }
-  }, [tagInput, tags]);
-
-  // 태그 삭제
-  const removeTag = useCallback((tagToRemove: string) => {
-    setTags(prev => prev.filter(tag => tag !== tagToRemove));
-  }, []);
-
-  // 저장 핸들러
-  const handleSave = useCallback(() => {
-    if (!editor) return;
-    
-    const content = editor.getText();
-    const htmlContent = editor.getHTML();
-    
-    if (!content.trim() && !title.trim()) {
-      toast.error('제목 또는 내용을 입력해주세요.');
+  const handleAnalyzeEmotion = async () => {
+    if (!content.trim()) {
+      toast.error("분석할 내용을 먼저 작성해주세요.");
       return;
     }
 
-    const entry: Partial<DiaryEntry> = {
-      title: title || '제목 없음',
-      content,
-      htmlContent,
-      date: new Date(),
-      tags,
-      mood: emotionAnalysis?.primaryEmotion || 'neutral',
-      wordCount,
-      isPrivate,
-      emotionAnalysis: emotionAnalysis || undefined,
-    };
+    setIsAnalyzing(true);
+    try {
+      const result = await emotionAnalysisService.analyzeEmotion(content);
+      setAnalysisResult(result);
+      toast.success("감정 분석이 완료되었습니다!");
+    } catch (error) {
+      console.error("감정 분석 실패:", error);
+      toast.error("감정 분석에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
-    onSave?.(entry);
-    setLastSaved(new Date());
-    toast.success('저장되었습니다.');
-  }, [editor, title, tags, wordCount, isPrivate, emotionAnalysis, onSave]);
+  const handleSave = async () => {
+    if (!content.trim()) {
+      toast.error("일기 내용을 작성해주세요.");
+      return;
+    }
 
-  // 자동 저장
-  useEffect(() => {
-    if (!autoSave) return;
+    if (!title.trim()) {
+      toast.error("제목을 입력해주세요.");
+      return;
+    }
 
-    const intervalId = setInterval(() => {
-      if (editor?.getText().trim() && title.trim()) {
-        handleSave();
+    setIsSaving(true);
+    try {
+      const diaryEntry: DiaryEntry = {
+        id: entry?.id || Date.now().toString(),
+        title: title.trim(),
+        content: content.trim(),
+        createdAt: entry?.createdAt || new Date(),
+        updatedAt: new Date(),
+        emotionAnalysis: analysisResult,
+      };
+
+      if (entry?.id) {
+        await databaseService.updateEntry(diaryEntry);
+        toast.success("일기가 수정되었습니다.");
+      } else {
+        await databaseService.addEntry(diaryEntry);
+        toast.success("일기가 저장되었습니다.");
       }
-    }, autoSaveInterval);
 
-    return () => clearInterval(intervalId);
-  }, [autoSave, autoSaveInterval, editor, title, handleSave]);
+      onSave?.(diaryEntry);
+    } catch (error) {
+      console.error("일기 저장 실패:", error);
+      toast.error("일기 저장에 실패했습니다. 다시 시도해주세요.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  // 키보드 단축키
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key) {
-          case 's':
-            e.preventDefault();
-            handleSave();
-            break;
-          case 'b':
-            e.preventDefault();
-            editor?.chain().focus().toggleBold().run();
-            break;
-          case 'i':
-            e.preventDefault();
-            editor?.chain().focus().toggleItalic().run();
-            break;
+  const handleExport = () => {
+    if (!content.trim()) {
+      toast.error("내보낼 내용이 없습니다.");
+      return;
+    }
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `diary-${format(new Date(), "yyyy-MM-dd")}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("일기가 텍스트 파일로 내보내졌습니다.");
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        setContent(text);
+        if (editor) {
+          editor.commands.setContent(text);
         }
+        toast.success("파일이 성공적으로 가져와졌습니다.");
       }
     };
+    reader.readAsText(file);
+  };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, handleSave]);
+  const handleReset = () => {
+    if (confirm("정말로 모든 내용을 지우시겠습니까?")) {
+      setContent("");
+      setTitle("");
+      setAnalysisResult(null);
+      if (editor) {
+        editor.commands.clearContent();
+      }
+      toast.success("내용이 초기화되었습니다.");
+    }
+  };
 
-  if (!editor) {
+  const getEmotionDisplay = () => {
+    if (!analysisResult) return null;
+
+    const primaryEmotion = analysisResult.primaryEmotion;
+    const confidence = analysisResult.confidence;
+    const score = analysisResult.score;
+
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="loading-spinner w-8 h-8" />
-      </div>
-    );
-  }
-
-  return (
-    <div className={`diary-editor ${className}`}>
-      {/* 헤더 */}
-      <div className="editor-header bg-white border-b border-gray-200 p-4 sticky top-0 z-10">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="제목을 입력하세요..."
-            className="text-2xl font-bold bg-transparent border-none outline-none placeholder-gray-400 flex-1"
-          />
-          
-          <div className="flex items-center space-x-2">
-            {/* 감정 분석 토글 */}
-            <button
-              onClick={() => setShowEmotionPanel(!showEmotionPanel)}
-              className={`btn btn-ghost p-2 ${showEmotionPanel ? 'bg-blue-100 text-blue-600' : ''}`}
-              title="감정 분석 패널"
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+            <Sparkles className="w-5 h-5 mr-2 text-purple-600" />
+            감정 분석 결과
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 주요 감정 */}
+          <div className="text-center">
+            <div className="text-4xl mb-2">
+              {EMOTION_EMOJIS[primaryEmotion]}
+            </div>
+            <div className="font-semibold text-gray-900 capitalize">
+              {primaryEmotion}
+            </div>
+            <div className="text-sm text-gray-600">주요 감정</div>
+          </div>
+
+          {/* 감정 점수 */}
+          <div className="text-center">
+            <div
+              className="text-2xl font-bold mb-2"
+              style={{
+                color:
+                  score > 0 ? "#10b981" : score < 0 ? "#ef4444" : "#6b7280",
+              }}
             >
-              <BarChart3 size={18} />
-            </button>
-            
-            {/* 프라이빗 모드 토글 */}
-            <button
-              onClick={() => setIsPrivate(!isPrivate)}
-              className={`btn btn-ghost p-2 ${isPrivate ? 'bg-red-100 text-red-600' : ''}`}
-              title={isPrivate ? '비공개 일기' : '공개 일기'}
-            >
-              {isPrivate ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-            
-            {/* 저장 버튼 */}
-            <button
-              onClick={handleSave}
-              className="btn btn-primary"
-              title="저장 (Ctrl+S)"
-            >
-              <Save size={18} />
-              <span className="hidden sm:inline ml-1">저장</span>
-            </button>
+              {score > 0 ? "+" : ""}
+              {score.toFixed(1)}
+            </div>
+            <div className="text-sm text-gray-600">감정 점수</div>
+          </div>
+
+          {/* 신뢰도 */}
+          <div className="text-center">
+            <div className="text-2xl font-bold mb-2 text-blue-600">
+              {Math.round(confidence * 100)}%
+            </div>
+            <div className="text-sm text-gray-600">신뢰도</div>
           </div>
         </div>
 
-        {/* 태그 입력 */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-            >
-              #{tag}
-              <button
-                onClick={() => removeTag(tag)}
-                className="ml-1 text-blue-600 hover:text-blue-800"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-          <input
-            type="text"
-            value={tagInput}
-            onChange={(e) => setTagInput(e.target.value)}
-            onKeyDown={handleAddTag}
-            placeholder="태그 입력 후 Enter"
-            className="px-2 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* 툴바 */}
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`btn btn-ghost p-2 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
-            title="굵게 (Ctrl+B)"
-          >
-            <Bold size={16} />
-          </button>
-          
-          <button
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`btn btn-ghost p-2 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
-            title="기울임 (Ctrl+I)"
-          >
-            <Italic size={16} />
-          </button>
-
-          <div className="w-px h-6 bg-gray-300 mx-2" />
-
-          <button
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`btn btn-ghost p-2 ${editor.isActive('bulletList') ? 'bg-gray-200' : ''}`}
-            title="글머리 기호 목록"
-          >
-            <List size={16} />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`btn btn-ghost p-2 ${editor.isActive('orderedList') ? 'bg-gray-200' : ''}`}
-            title="번호 목록"
-          >
-            <ListOrdered size={16} />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
-            className={`btn btn-ghost p-2 ${editor.isActive('blockquote') ? 'bg-gray-200' : ''}`}
-            title="인용구"
-          >
-            <Quote size={16} />
-          </button>
-
-          <div className="w-px h-6 bg-gray-300 mx-2" />
-
-          <button
-            onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().undo()}
-            className="btn btn-ghost p-2 disabled:opacity-50"
-            title="실행 취소"
-          >
-            <Undo size={16} />
-          </button>
-
-          <button
-            onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().redo()}
-            className="btn btn-ghost p-2 disabled:opacity-50"
-            title="다시 실행"
-          >
-            <Redo size={16} />
-          </button>
-        </div>
-      </div>
-
-      <div className="editor-content flex">
-        {/* 메인 에디터 영역 */}
-        <div className="flex-1 p-4">
-          {/* Bubble Menu */}
-          <BubbleMenu
-            editor={editor}
-            className="bubble-menu bg-white border border-gray-200 rounded-lg shadow-lg p-1 flex items-center space-x-1"
-          >
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`btn btn-ghost p-1 ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
-            >
-              <Bold size={14} />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={`btn btn-ghost p-1 ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
-            >
-              <Italic size={14} />
-            </button>
-          </BubbleMenu>
-
-          {/* Floating Menu */}
-          <FloatingMenu
-            editor={editor}
-            className="floating-menu bg-white border border-gray-200 rounded-lg shadow-lg p-1 flex items-center space-x-1"
-          >
-            <button
-              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-              className="btn btn-ghost text-sm px-2 py-1"
-            >
-              H1
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleBulletList().run()}
-              className="btn btn-ghost p-1"
-            >
-              <List size={14} />
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleBlockquote().run()}
-              className="btn btn-ghost p-1"
-            >
-              <Quote size={14} />
-            </button>
-          </FloatingMenu>
-
-          {/* 에디터 */}
-          <EditorContent
-            editor={editor}
-            className="min-h-[400px] focus:outline-none"
-          />
-
-          {/* 상태 바 */}
-          <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-            <div className="flex items-center space-x-4">
-              <span>{wordCount} 단어</span>
-              {isAnalyzing && (
-                <div className="flex items-center space-x-1">
-                  <div className="loading-spinner w-3 h-3" />
-                  <span>감정 분석 중...</span>
+        {/* 감정 단어들 */}
+        {(analysisResult.words.positive.length > 0 ||
+          analysisResult.words.negative.length > 0) && (
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {analysisResult.words.positive.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium text-green-700 mb-2">
+                    긍정적 단어
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {analysisResult.words.positive
+                      .slice(0, 5)
+                      .map((word, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full"
+                        >
+                          {word}
+                        </span>
+                      ))}
+                  </div>
                 </div>
               )}
-              {emotionAnalysis && (
-                <div className="flex items-center space-x-1">
-                  <span>{EMOTION_EMOJIS[emotionAnalysis.primaryEmotion]}</span>
-                  <span className="capitalize">{emotionAnalysis.primaryEmotion}</span>
-                  <span>({Math.round(emotionAnalysis.confidence * 100)}%)</span>
+              {analysisResult.words.negative.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium text-red-700 mb-2">
+                    부정적 단어
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {analysisResult.words.negative
+                      .slice(0, 5)
+                      .map((word, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full"
+                        >
+                          {word}
+                        </span>
+                      ))}
+                  </div>
                 </div>
               )}
-            </div>
-            {lastSaved && (
-              <span>
-                마지막 저장: {lastSaved.toLocaleTimeString()}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* 감정 분석 패널 */}
-        {showEmotionPanel && emotionAnalysis && (
-          <div className="w-80 bg-gray-50 border-l border-gray-200 p-4">
-            <div className="mb-4">
-              <h3 className="font-semibold text-gray-900 mb-2 flex items-center">
-                <Smile className="mr-2" size={18} />
-                감정 분석
-              </h3>
-              <div className="text-sm text-gray-600 mb-3">
-                전체 점수: {emotionAnalysis.score > 0 ? '+' : ''}{emotionAnalysis.score.toFixed(1)}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {Object.entries(emotionAnalysis.emotionScores)
-                .filter(([, score]) => score > 0)
-                .sort(([, a], [, b]) => b - a)
-                .map(([emotion, score]) => (
-                  <EmotionIndicator
-                    key={emotion}
-                    emotion={emotion as EmotionType}
-                    score={score}
-                    isActive={emotion === emotionAnalysis.primaryEmotion}
-                  />
-                ))}
-            </div>
-
-            <div className="mt-4 p-3 bg-white rounded-lg">
-              <div className="text-xs text-gray-500 mb-1">신뢰도</div>
-              <div className="flex items-center">
-                <div className="flex-1 bg-gray-200 rounded-full h-2 mr-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${emotionAnalysis.confidence * 100}%` }}
-                  />
-                </div>
-                <span className="text-sm font-medium">
-                  {Math.round(emotionAnalysis.confidence * 100)}%
-                </span>
-              </div>
             </div>
           </div>
         )}
+      </div>
+    );
+  };
+
+  return (
+    <div className={`max-w-4xl mx-auto ${className}`}>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        {/* 헤더 */}
+        <div className="border-b border-gray-200 p-6">
+          <input
+            type="text"
+            value={title}
+            onChange={handleTitleChange}
+            placeholder="일기 제목을 입력하세요..."
+            className="w-full text-2xl font-bold text-gray-900 placeholder-gray-500 border-none outline-none focus:ring-0 bg-transparent"
+          />
+
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-gray-500">
+              {entry?.createdAt &&
+                format(new Date(entry.createdAt), "yyyy년 MM월 dd일 EEEE", {
+                  locale: ko,
+                })}
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                className="flex items-center space-x-2 px-3 py-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title={isPreviewMode ? "편집 모드" : "미리보기 모드"}
+              >
+                {isPreviewMode ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+                <span className="text-sm">
+                  {isPreviewMode ? "편집" : "미리보기"}
+                </span>
+              </button>
+
+              <button
+                onClick={handleAnalyzeEmotion}
+                disabled={isAnalyzing || !content.trim()}
+                className="flex items-center space-x-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                title="감정 분석"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span className="text-sm">
+                  {isAnalyzing ? "분석 중..." : "감정 분석"}
+                </span>
+              </button>
+
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={handleExport}
+                  disabled={!content.trim()}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors disabled:text-gray-400 disabled:cursor-not-allowed"
+                  title="내보내기"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="가져오기"
+                >
+                  <Upload className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={handleReset}
+                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                  title="초기화"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 감정 분석 결과 */}
+        {analysisResult && (
+          <div className="p-6 border-b border-gray-200">
+            {getEmotionDisplay()}
+          </div>
+        )}
+
+        {/* 에디터 콘텐츠 */}
+        <div className="p-6">
+          {isPreviewMode ? (
+            <div className="prose max-w-none">
+              <h1 className="text-3xl font-bold text-gray-900 mb-6">
+                {title || "제목 없음"}
+              </h1>
+              <div
+                className="text-gray-800 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: content }}
+              />
+            </div>
+          ) : (
+            <div className="min-h-96">
+              <EditorContent
+                editor={editor}
+                className="prose max-w-none [&_.ProseMirror]:min-h-96 [&_.ProseMirror]:outline-none [&_.ProseMirror]:p-4 [&_.ProseMirror]:border [&_.ProseMirror]:border-gray-300 [&_.ProseMirror]:rounded-lg [&_.ProseMirror:focus]:border-blue-500 [&_.ProseMirror:focus]:ring-2 [&_.ProseMirror:focus]:ring-blue-200 [&_.ProseMirror]:transition-colors"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* 푸터 */}
+        <div className="border-t border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              {content.replace(/<[^>]*>/g, "").length}자
+            </div>
+
+            <div className="flex items-center space-x-3">
+              {onCancel && (
+                <button
+                  onClick={onCancel}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  disabled={isSaving}
+                >
+                  취소
+                </button>
+              )}
+
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !content.trim() || !title.trim()}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>{isSaving ? "저장 중..." : "저장"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".txt,.md"
+          onChange={handleImport}
+          className="hidden"
+        />
       </div>
     </div>
   );
