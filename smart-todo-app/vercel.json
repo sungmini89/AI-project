@@ -1,17 +1,17 @@
 {
   "build": {
     "env": {
-      "VITE_USE_MOCK_DATA": "@vite-use-mock-data",
-      "VITE_API_MODE": "@vite-api-mode",
-      "VITE_HUGGINGFACE_TOKEN": "@vite-huggingface-token",
-      "VITE_GEMINI_API_KEY": "@vite-gemini-api-key",
-      "VITE_APP_NAME": "@vite-app-name",
-      "VITE_APP_VERSION": "@vite-app-version",
-      "VITE_PWA_ENABLED": "@vite-pwa-enabled",
-      "VITE_PWA_OFFLINE_SUPPORT": "@vite-pwa-offline-support",
-      "VITE_POMODORO_WORK_TIME": "@vite-pomodoro-work-time",
-      "VITE_POMODORO_SHORT_BREAK": "@vite-pomodoro-short-break",
-      "VITE_POMODORO_LONG_BREAK": "@vite-pomodoro-long-break"
+      "VITE_USE_MOCK_DATA": "false",
+      "VITE_API_MODE": "production",
+      "VITE_HUGGINGFACE_TOKEN": "",
+      "VITE_GEMINI_API_KEY": "",
+      "VITE_APP_NAME": "Smart Todo App",
+      "VITE_APP_VERSION": "1.0.0",
+      "VITE_PWA_ENABLED": "true",
+      "VITE_PWA_OFFLINE_SUPPORT": "true",
+      "VITE_POMODORO_WORK_TIME": "25",
+      "VITE_POMODORO_SHORT_BREAK": "5",
+      "VITE_POMODORO_LONG_BREAK": "15"
     }
   },
   "rewrites": [
