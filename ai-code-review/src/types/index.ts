@@ -248,6 +248,10 @@ export interface UserSettings {
     cohere?: string;
     /** Hugging Face API 키 */
     huggingface?: string;
+    /** OpenAI API 키 */
+    openai?: string;
+    /** Claude API 키 */
+    claude?: string;
   };
   /** 사용자 선호사항 */
   preferences: {

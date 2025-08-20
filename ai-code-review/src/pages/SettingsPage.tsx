@@ -187,6 +187,8 @@ export const SettingsPage: React.FC = () => {
         gemini: "",
         cohere: "",
         huggingface: "",
+        openai: "",
+        claude: "",
       });
 
       addNotification({
