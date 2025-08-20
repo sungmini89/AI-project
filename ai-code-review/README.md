@@ -35,7 +35,9 @@
 
 ### 🤖 **AI 기반 분석**
 
-- **Google Gemini API**: 고급 AI 코드 분석 및 개선 제안 (무료 티어: 1,500회/일)
+- **OpenAI API**: ChatGPT/GPT-4 기반 고급 코드 분석 및 개선 제안
+- **Claude API**: Anthropic Claude를 통한 심층 코드 리뷰 및 품질 검사
+- **Google Gemini API**: 고급 AI 코드 분석 및 개선 제안 (무료 티어: 1,500회/일) 
 - **Cohere API**: 대안 AI 분석 서비스 (무료 티어: 1,000회/월)
 - **오프라인 대체**: API 사용량 초과 시 자동으로 오프라인 모드로 전환
 
@@ -110,11 +112,12 @@ ai-code-review/
 │   ├── 📁 pages/                # 페이지 컴포넌트
 │   │   ├── 📄 HomePage.tsx      # 홈페이지
 │   │   ├── 📄 AnalyzePage.tsx   # 코드 분석 페이지
-│   │   ├── 📄 SettingsPage.tsx  # 설정 페이지
+│   │   ├── 📄 SettingsPage.tsx  # 설정 페이지 (Personal API 설정 포함)
 │   │   └── 📄 OfflinePage.tsx   # 오프라인 도구 페이지
 │   ├── 📁 services/             # 비즈니스 로직 서비스
 │   │   ├── 📄 analysisOrchestrator.ts   # 분석 오케스트레이터
 │   │   ├── 📄 freeAIService.ts          # 무료 AI 서비스 (Gemini, Cohere)
+│   │   ├── 📄 personalAIService.ts      # Personal AI 서비스 (OpenAI, Claude)
 │   │   ├── 📄 offlineService.ts         # 오프라인 분석 서비스
 │   │   ├── 📄 formattingService.ts      # 코드 포맷팅 서비스
 │   │   └── 📄 mockService.ts            # 테스트용 모의 서비스
@@ -446,6 +449,38 @@ Error: API key not valid
 4. 오프라인 모드로 전환
 ```
 
+#### **6. JSON 파일 구문 오류**
+
+```bash
+# JSON 파싱 오류 (Vercel 배포 실패 원인)
+Error: JSON.parse Invalid package.json: JSONParseError: Unexpected token "/"
+
+# 해결 방법
+1. package.json에서 JavaScript 주석 제거
+2. vercel.json에서 JavaScript 주석 제거
+3. 모든 JSON 파일에서 // 주석 사용 금지
+4. JSON 파일은 순수 JSON 형식만 사용
+```
+
+#### **7. TypeScript 빌드 오류**
+
+```bash
+# TypeScript 타입 오류 (Personal API 추가 시 발생)
+Error: Type is missing the following properties: openai, claude
+
+# 해결 방법
+1. src/types/index.ts에서 apiKeys 인터페이스 업데이트:
+   apiKeys: {
+     gemini?: string;
+     cohere?: string;
+     huggingface?: string;
+     openai?: string;    // 추가
+     claude?: string;    // 추가
+   }
+2. handleResetSettings 함수에서 새 API 키 포함
+3. 타입 검사 실행: npm run type-check
+```
+
 #### **5. 오프라인 모드 문제**
 
 ```bash
@@ -483,44 +518,51 @@ react-devtools
 
 ## ✨ 개선된 부분들
 
-### **v1.0.0 → v1.1.0 주요 개선사항**
+### **v1.0.0 → v1.2.0 주요 개선사항**
 
-#### **1. 코드 품질 향상**
+#### **1. Personal API 지원 추가**
+
+- ✅ **OpenAI API 통합**: ChatGPT/GPT-4를 통한 고급 코드 분석
+- ✅ **Claude API 통합**: Anthropic Claude를 통한 심층 코드 리뷰
+- ✅ **API 모드 전환**: Free API와 Personal API 간 원활한 전환
+- ✅ **설정 페이지 개선**: API 키 관리 및 모드 선택 UI
+
+#### **2. 코드 품질 향상**
 
 - ✅ **JSDoc 주석 추가**: 모든 함수, 클래스, 인터페이스에 상세한 문서화
-- ✅ **TypeScript 타입 강화**: 엄격한 타입 체크 및 타입 안전성 향상
+- ✅ **TypeScript 타입 강화**: OpenAI/Claude API 키 타입 추가 및 타입 안전성 향상
 - ✅ **ESLint 규칙 최적화**: 코드 일관성 및 품질 향상
-- ✅ **Prettier 설정 개선**: 일관된 코드 스타일 적용
+- ✅ **JSON 구문 오류 수정**: package.json 및 vercel.json의 JavaScript 주석 제거
 
-#### **2. 성능 최적화**
+#### **3. 성능 최적화**
 
 - ✅ **React.memo 적용**: 불필요한 리렌더링 방지
 - ✅ **useMemoizedCallback**: 콜백 함수 메모이제이션
 - ✅ **useDebounce 훅**: API 요청 최적화
 - ✅ **Lazy Loading**: 컴포넌트 지연 로딩
 
-#### **3. 사용자 경험 개선**
+#### **4. 사용자 경험 개선**
 
 - ✅ **다국어 지원**: 한국어/영어 지원
 - ✅ **테마 시스템**: 다크/라이트 테마 전환
 - ✅ **반응형 디자인**: 모바일/태블릿/데스크톱 최적화
 - ✅ **접근성 향상**: ARIA 라벨, 키보드 네비게이션
 
-#### **4. PWA 기능 강화**
+#### **5. PWA 기능 강화**
 
 - ✅ **오프라인 지원**: 서비스 워커를 통한 완전한 오프라인 기능
 - ✅ **앱 설치**: 홈 화면에 앱으로 설치 가능
 - ✅ **백그라운드 동기화**: 오프라인 작업 동기화
 - ✅ **푸시 알림**: 실시간 알림 지원
 
-#### **5. 테스트 커버리지 향상**
+#### **6. 테스트 커버리지 향상**
 
 - ✅ **단위 테스트**: 모든 주요 컴포넌트 및 함수 테스트
 - ✅ **통합 테스트**: API 연동 및 상태 관리 테스트
 - ✅ **E2E 테스트**: 사용자 시나리오 기반 테스트
 - ✅ **테스트 자동화**: CI/CD 파이프라인 통합
 
-### **향후 개선 계획 (v1.2.0)**
+### **향후 개선 계획 (v1.3.0)**
 
 #### **기능 확장**
 
@@ -564,6 +606,22 @@ react-devtools
 3. "추가" 버튼 클릭
 
 ## 🔑 API 키 발급
+
+### **OpenAI API (Personal)**
+
+1. [OpenAI Platform](https://platform.openai.com/api-keys)에 접속
+2. OpenAI 계정으로 로그인
+3. "Create new secret key" 클릭
+4. 생성된 API 키 복사 (sk-...)
+5. 설정 페이지에서 Personal API 모드 선택 후 API 키 입력
+
+### **Claude API (Personal)**
+
+1. [Anthropic Console](https://console.anthropic.com/account/keys)에 접속
+2. Anthropic 계정으로 로그인
+3. "Create Key" 클릭
+4. 생성된 API 키 복사 (sk-ant-...)
+5. 설정 페이지에서 Personal API 모드 선택 후 API 키 입력
 
 ### **Google Gemini API**
 
