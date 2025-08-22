@@ -122,9 +122,17 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
           confidence: 0,
           words: { positive: [], negative: [] },
           emotionScores: {
-            happy: 0, sad: 0, angry: 0, neutral: 1, excited: 0,
-            calm: 0, anxious: 0, proud: 0, disappointed: 0, grateful: 0
-          }
+            happy: 0,
+            sad: 0,
+            angry: 0,
+            neutral: 1,
+            excited: 0,
+            calm: 0,
+            anxious: 0,
+            proud: 0,
+            disappointed: 0,
+            grateful: 0,
+          },
         };
       }
 

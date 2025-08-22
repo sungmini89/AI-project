@@ -215,7 +215,10 @@ class DatabaseService extends Dexie {
             entryId: entry.id,
           });
         } catch (historyError) {
-          console.warn("감정 히스토리 저장 실패, 일기 저장은 성공:", historyError);
+          console.warn(
+            "감정 히스토리 저장 실패, 일기 저장은 성공:",
+            historyError
+          );
         }
       }
 
@@ -259,7 +262,10 @@ class DatabaseService extends Dexie {
             });
           }
         } catch (historyError) {
-          console.warn("감정 히스토리 업데이트 실패, 일기 수정은 성공:", historyError);
+          console.warn(
+            "감정 히스토리 업데이트 실패, 일기 수정은 성공:",
+            historyError
+          );
         }
       }
     } catch (error) {
