@@ -32,7 +32,7 @@ import type {
  */
 interface DiaryEditorProps {
   entry?: DiaryEntry;
-  onSave?: (entry: DiaryEntry) => void;
+  onSave?: (entry: DiaryEntry) => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -108,7 +108,9 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
       );
 
       const diaryEntry: DiaryEntry = {
-        id: entry?.id || `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id:
+          entry?.id ||
+          `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title: title.trim(),
         content: cleanContent, // 순수 텍스트로 저장
         createdAt: entry?.createdAt || new Date(),
@@ -117,7 +119,9 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
       };
 
       // 저장 성공 시 onSave 콜백 호출 (실제 저장은 WritePage에서 처리)
-      onSave?.(diaryEntry);
+      if (onSave) {
+        await onSave(diaryEntry);
+      }
 
       // 감정 분석 완료 알림
       if (analysisResult) {
