@@ -580,6 +580,185 @@ const matchesDateSearch = (searchTerm: string, entryDate: Date): boolean => {
 - 정확한 날짜 매칭
 - 사용자 편의성 향상
 
+### 8. 감정 분석 → 저장 플로우 문제
+
+#### 문제 상황
+
+- 일기 작성 후 감정 분석 단계가 누락됨
+- 저장 버튼만 존재하여 분석 없이 바로 저장 가능
+- 사용자가 의도한 "분석 → 저장" 순서 플로우 부재
+
+#### 해결 방법
+
+```typescript
+// DiaryEditor.tsx - 분석 → 저장 플로우 복원
+const DiaryEditor: React.FC<DiaryEditorProps> = ({ entry, onSave, onCancel }) => {
+  const [analysisResult, setAnalysisResult] = useState<EmotionAnalysisResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  return (
+    <div>
+      {/* 액션 버튼들 */}
+      <div className="flex items-center space-x-2">
+        {/* 감정 분석 버튼 (녹색) */}
+        <button
+          onClick={async () => {
+            // 제목과 내용 검증
+            if (!title.trim() || !editor?.getHTML()) {
+              toast.error("제목과 내용을 입력해주세요.");
+              return;
+            }
+            
+            setIsAnalyzing(true);
+            try {
+              const content = editor.getHTML();
+              const cleanContent = stripHtmlTags(content);
+              const result = await emotionAnalysisService.analyzeEmotion(cleanContent);
+              setAnalysisResult(result);
+              toast.success("감정 분석이 완료되었습니다.");
+            } catch (error) {
+              toast.error("감정 분석에 실패했습니다.");
+            } finally {
+              setIsAnalyzing(false);
+            }
+          }}
+          disabled={isAnalyzing || isSaving}
+          className="px-4 py-2 bg-green-600 text-white rounded-lg"
+        >
+          {isAnalyzing ? "분석 중..." : "분석"}
+        </button>
+
+        {/* 저장 버튼 (파란색) - 분석 완료 후에만 활성화 */}
+        <button
+          onClick={handleSave}
+          disabled={isSaving || isAnalyzing || !analysisResult}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg"
+        >
+          {isSaving ? "저장 중..." : "저장"}
+        </button>
+      </div>
+
+      {/* 감정 분석 결과 표시 */}
+      {analysisResult && (
+        <div className="border-t border-gray-200 pt-4">
+          <h4>감정 분석 결과</h4>
+          {getEmotionDisplay(analysisResult)}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
+#### 결과
+
+- **올바른 플로우**: 분석 → 저장 순서로 진행
+- **명확한 상태**: 각 단계별 버튼 상태와 텍스트
+- **사용자 안내**: 분석 완료 후 저장 가능하다는 명확한 피드백
+- **시각적 구분**: 녹색(분석)과 파란색(저장) 버튼으로 역할 구분
+
+### 9. 일기 작성 칸 초기화 문제
+
+#### 문제 상황
+
+- 일기 작성 후 분석 → 저장이 완료되어도 일기 작성 칸이 초기화되지 않음
+- 새로 작성된 일기의 경우 `navigate(\`/write/${diaryEntry.id}\`)`로 이동하여 같은 페이지에 머물러 있음
+- 사용자가 새로운 일기를 작성하려면 페이지를 새로고침해야 하는 불편함
+
+#### 해결 방법
+
+```typescript
+// WritePage.tsx - 저장 후 페이지 이동 로직 수정
+const handleSave = async (diaryEntry: DiaryEntry) => {
+  try {
+    if (id) {
+      // 기존 일기 수정 - 일기 목록 페이지로 이동
+      navigate("/diary");
+    } else {
+      // 새 일기 작성 - 일기 목록 페이지로 이동하여 작성 칸 초기화
+      navigate("/diary");
+    }
+  } catch (error) {
+    console.error("onSave 콜백 실행 실패:", error);
+  }
+};
+```
+
+#### 결과
+
+- **완전한 초기화**: 일기 작성 후 작성 칸이 깨끗하게 초기화
+- **사용자 경험 개선**: 새로운 일기 작성 준비가 즉시 가능
+- **직관적인 플로우**: 저장 완료 → 목록 페이지 → 새 작성 준비
+
+### 10. Vercel 빌드 오류 해결
+
+#### 문제 상황
+
+- `process.env.NODE_ENV` 관련 TypeScript 오류
+- `@types/node` 타입 정의 누락
+- Vite 환경에서 Node.js 환경 변수 접근 문제
+
+#### 해결 방법
+
+```bash
+# @types/node 설치
+npm install --save-dev @types/node
+```
+
+```typescript
+// DebugTest.tsx, ErrorBoundary.tsx - Vite 호환성 수정
+// 기존
+if (process.env.NODE_ENV === 'development') { ... }
+
+// 수정
+if (import.meta.env.MODE === 'development') { ... }
+```
+
+#### 결과
+
+- Vercel 빌드 성공
+- TypeScript 컴파일 오류 해결
+- Vite 환경과의 완벽한 호환성
+
+### 11. 감정 캘린더 시간대 문제
+
+#### 문제 상황
+
+- 감정 이모티콘이 저장된 날짜가 아닌 다음 날짜에 표시됨
+- `toISOString()` 사용으로 인한 UTC 변환 문제
+- 로컬 시간대와 UTC 시간대 불일치
+
+#### 해결 방법
+
+```typescript
+// EmotionCalendar.tsx - 시간대 문제 해결
+const getTileContent = (date: Date) => {
+  // 기존 (문제)
+  const dateString = date.toISOString().split("T")[0]; // UTC 기반
+  
+  // 수정 (해결)
+  const dateString = date.toLocaleDateString('en-CA'); // 로컬 시간 기반 (YYYY-MM-DD)
+  
+  // 감정 이모티콘 표시 로직
+  const emotionData = emotionHistory.find(
+    (item) => item.date === dateString
+  );
+  
+  return emotionData ? (
+    <div className="emotion-indicator">
+      {getEmotionEmoji(emotionData.emotion)}
+    </div>
+  ) : null;
+};
+```
+
+#### 결과
+
+- 감정 이모티콘이 정확한 저장 날짜에 표시
+- 시간대 문제 완전 해결
+- 사용자 경험 개선
+
 ---
 
 ## 🧪 개발 가이드
