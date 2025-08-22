@@ -54,7 +54,8 @@ const WritePage: React.FC = () => {
         navigate("/diary");
       } else {
         // 새 일기 작성 - 이미 DiaryEditor에서 저장 완료
-        navigate(`/write/${diaryEntry.id}`);
+        // 일기 목록 페이지로 이동하여 작성 칸 초기화
+        navigate("/diary");
       }
     } catch (error) {
       console.error("onSave 콜백 실행 실패:", error);
