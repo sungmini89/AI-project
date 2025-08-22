@@ -81,6 +81,11 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
    * @returns Promise<void>
    */
   const handleSave = async () => {
+    // 이미 저장 중이면 중복 실행 방지
+    if (isSaving) {
+      return;
+    }
+
     if (!title.trim()) {
       toast.error(
         language === "ko" ? "제목을 입력해주세요." : "Please enter a title."
@@ -140,6 +145,12 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
         await notificationService.notifyEmotionAnalyzed(
           analysisResult.primaryEmotion
         );
+      }
+
+      // 저장 성공 후 에디터 초기화 (새로 작성 모드인 경우)
+      if (!entry) {
+        setTitle("");
+        editor?.commands.setContent("");
       }
 
       // 저장 성공 시 onSave 콜백 호출 (별도 try-catch로 처리)
