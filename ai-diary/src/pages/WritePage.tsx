@@ -47,9 +47,10 @@ const WritePage: React.FC = () => {
 
   const handleSave = async (diaryEntry: DiaryEntry) => {
     try {
+      // DiaryEditor에서 이미 저장이 완료되었으므로 추가 저장은 하지 않음
+      // 단순히 성공 메시지와 함께 페이지 이동만 처리
       if (id) {
-        // 기존 일기 수정
-        await databaseService.updateEntry(diaryEntry);
+        // 기존 일기 수정 - 이미 DiaryEditor에서 수정 완료
         toast.success(
           language === "ko"
             ? "일기가 수정되었습니다."
@@ -57,8 +58,7 @@ const WritePage: React.FC = () => {
         );
         navigate("/diary");
       } else {
-        // 새 일기 작성 - DiaryEditor에서 이미 ID를 생성했으므로 그대로 사용
-        await databaseService.addEntry(diaryEntry);
+        // 새 일기 작성 - 이미 DiaryEditor에서 저장 완료
         toast.success(
           language === "ko"
             ? "일기가 저장되었습니다."
@@ -72,7 +72,7 @@ const WritePage: React.FC = () => {
         language === "ko"
           ? "일기 저장에 실패했습니다."
           : "Failed to save diary."
-      );
+        );
     }
   };
 

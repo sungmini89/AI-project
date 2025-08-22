@@ -118,7 +118,24 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
         emotionAnalysis: analysisResult,
       };
 
-      // 저장 성공 시 onSave 콜백 호출 (실제 저장은 WritePage에서 처리)
+      // 실제 저장 수행
+      if (entry) {
+        // 수정 모드
+        await databaseService.updateEntry(diaryEntry);
+        toast.success(
+          language === "ko"
+            ? "일기가 수정되었습니다."
+            : "Diary has been updated."
+        );
+      } else {
+        // 새로 작성 모드
+        await databaseService.addEntry(diaryEntry);
+        toast.success(
+          language === "ko" ? "일기가 저장되었습니다." : "Diary has been saved."
+        );
+      }
+
+      // 저장 성공 시 onSave 콜백 호출
       if (onSave) {
         await onSave(diaryEntry);
       }

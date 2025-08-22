@@ -195,7 +195,8 @@ class DatabaseService extends Dexie {
   }
 
   /**
-   * 새로운 일기를 추가합니다.
+   * 새로운 일기 항목을 데이터베이스에 추가합니다.
+   * 감정 분석 결과가 있으면 감정 히스토리에도 함께 저장합니다.
    *
    * @param entry - 추가할 일기 데이터
    * @returns 생성된 일기의 ID
@@ -221,6 +222,12 @@ class DatabaseService extends Dexie {
     }
   }
 
+  /**
+   * 기존 일기 항목을 수정합니다.
+   * 감정 분석 결과가 있으면 감정 히스토리도 함께 업데이트합니다.
+   *
+   * @param entry - 수정할 일기 데이터
+   */
   async updateEntry(entry: DiaryEntry): Promise<void> {
     try {
       await this.entries.update(entry.id, entry);
