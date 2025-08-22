@@ -76,7 +76,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
   };
 
   /**
-   * 일기를 저장합니다.
    * 제목과 내용을 검증하고, 감정 분석을 수행한 후 데이터베이스에 저장합니다.
    *
    * @returns Promise<void>
@@ -109,9 +108,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
       );
 
       const diaryEntry: DiaryEntry = {
-        id:
-          entry?.id ||
-          `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: entry?.id || `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title: title.trim(),
         content: cleanContent, // 순수 텍스트로 저장
         createdAt: entry?.createdAt || new Date(),
@@ -119,30 +116,15 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
         emotionAnalysis: analysisResult,
       };
 
-      if (entry) {
-        // 수정 모드
-        await databaseService.updateEntry(diaryEntry);
-        toast.success(
-          language === "ko"
-            ? "일기가 수정되었습니다."
-            : "Diary has been updated."
-        );
-      } else {
-        // 새로 작성 모드
-        await databaseService.addEntry(diaryEntry);
-        toast.success(
-          language === "ko" ? "일기가 저장되었습니다." : "Diary has been saved."
-        );
-
-        // 감정 분석 완료 알림
-        if (analysisResult) {
-          await notificationService.notifyEmotionAnalyzed(
-            analysisResult.primaryEmotion
-          );
-        }
-      }
-
+      // 저장 성공 시 onSave 콜백 호출 (실제 저장은 WritePage에서 처리)
       onSave?.(diaryEntry);
+
+      // 감정 분석 완료 알림
+      if (analysisResult) {
+        await notificationService.notifyEmotionAnalyzed(
+          analysisResult.primaryEmotion
+        );
+      }
     } catch (error) {
       console.error("일기 저장 실패:", error);
       toast.error(

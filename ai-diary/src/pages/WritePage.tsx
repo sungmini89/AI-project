@@ -57,14 +57,14 @@ const WritePage: React.FC = () => {
         );
         navigate("/diary");
       } else {
-        // 새 일기 작성
-        const newId = await databaseService.addEntry(diaryEntry);
+        // 새 일기 작성 - DiaryEditor에서 이미 ID를 생성했으므로 그대로 사용
+        await databaseService.addEntry(diaryEntry);
         toast.success(
           language === "ko"
             ? "일기가 저장되었습니다."
             : "Diary saved successfully."
         );
-        navigate(`/write/${newId}`);
+        navigate(`/write/${diaryEntry.id}`);
       }
     } catch (error) {
       console.error("일기 저장 실패:", error);

@@ -1,7 +1,7 @@
-import React, { Component } from 'react';
-import type { ErrorInfo, ReactNode } from 'react';
-import { AlertTriangle, RefreshCcw, Home } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import React, { Component } from "react";
+import type { ErrorInfo, ReactNode } from "react";
+import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
+import { toast } from "react-hot-toast";
 
 interface Props {
   children: ReactNode;
@@ -34,8 +34,8 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+
     this.setState({
       error,
       errorInfo,
@@ -47,12 +47,12 @@ class ErrorBoundary extends Component<Props, State> {
     }
 
     // Show toast notification
-    toast.error('앱에서 오류가 발생했습니다. 페이지를 새로고침해주세요.');
+    toast.error("앱에서 오류가 발생했습니다. 페이지를 새로고침해주세요.");
 
     // Log to external service in production
-    if (import.meta.env.MODE === 'production') {
+    if (import.meta.env.MODE === "production") {
       // Here you would send error to logging service
-      console.log('Production error logged:', {
+      console.log("Production error logged:", {
         error: error.message,
         stack: error.stack,
         componentStack: errorInfo.componentStack,
@@ -66,7 +66,7 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   handleGoHome = () => {
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   render() {
@@ -86,23 +86,28 @@ class ErrorBoundary extends Component<Props, State> {
                 앱에 오류가 발생했습니다
               </h1>
               <p className="text-gray-600 mb-4">
-                예상치 못한 오류가 발생했습니다. 페이지를 새로고침하거나 홈으로 돌아가세요.
+                예상치 못한 오류가 발생했습니다. 페이지를 새로고침하거나 홈으로
+                돌아가세요.
               </p>
             </div>
 
-            {import.meta.env.MODE === 'development' && (
+            {import.meta.env.MODE === "development" && (
               <details className="mb-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 mb-2">
                   오류 세부 정보 (개발 모드)
                 </summary>
                 <div className="bg-gray-100 p-3 rounded text-xs font-mono text-gray-700 max-h-40 overflow-auto">
-                  <p className="font-semibold mb-2">Error: {this.state.error?.message}</p>
+                  <p className="font-semibold mb-2">
+                    Error: {this.state.error?.message}
+                  </p>
                   <pre className="whitespace-pre-wrap">
                     {this.state.error?.stack}
                   </pre>
                   {this.state.errorInfo && (
                     <>
-                      <p className="font-semibold mt-4 mb-2">Component Stack:</p>
+                      <p className="font-semibold mt-4 mb-2">
+                        Component Stack:
+                      </p>
                       <pre className="whitespace-pre-wrap">
                         {this.state.errorInfo.componentStack}
                       </pre>
