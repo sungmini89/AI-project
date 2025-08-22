@@ -135,16 +135,21 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
         );
       }
 
-      // 저장 성공 시 onSave 콜백 호출
-      if (onSave) {
-        await onSave(diaryEntry);
-      }
-
       // 감정 분석 완료 알림
       if (analysisResult) {
         await notificationService.notifyEmotionAnalyzed(
           analysisResult.primaryEmotion
         );
+      }
+
+      // 저장 성공 시 onSave 콜백 호출 (별도 try-catch로 처리)
+      if (onSave) {
+        try {
+          await onSave(diaryEntry);
+        } catch (callbackError) {
+          console.error("onSave 콜백 실행 실패:", callbackError);
+          // 콜백 오류는 저장 성공에 영향을 주지 않음
+        }
       }
     } catch (error) {
       console.error("일기 저장 실패:", error);

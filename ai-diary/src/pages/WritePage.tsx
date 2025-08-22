@@ -48,31 +48,17 @@ const WritePage: React.FC = () => {
   const handleSave = async (diaryEntry: DiaryEntry) => {
     try {
       // DiaryEditor에서 이미 저장이 완료되었으므로 추가 저장은 하지 않음
-      // 단순히 성공 메시지와 함께 페이지 이동만 처리
+      // 단순히 페이지 이동만 처리
       if (id) {
         // 기존 일기 수정 - 이미 DiaryEditor에서 수정 완료
-        toast.success(
-          language === "ko"
-            ? "일기가 수정되었습니다."
-            : "Diary updated successfully."
-        );
         navigate("/diary");
       } else {
         // 새 일기 작성 - 이미 DiaryEditor에서 저장 완료
-        toast.success(
-          language === "ko"
-            ? "일기가 저장되었습니다."
-            : "Diary saved successfully."
-        );
         navigate(`/write/${diaryEntry.id}`);
       }
     } catch (error) {
-      console.error("일기 저장 실패:", error);
-      toast.error(
-        language === "ko"
-          ? "일기 저장에 실패했습니다."
-          : "Failed to save diary."
-        );
+      console.error("onSave 콜백 실행 실패:", error);
+      // 콜백 오류는 저장 성공에 영향을 주지 않음
     }
   };
 
