@@ -68,7 +68,6 @@ class NotificationService {
         badge: options.badge || "/icons/diary-icon.svg",
         tag: options.tag || "ai-diary",
         requireInteraction: options.requireInteraction || false,
-        timestamp: Date.now(),
       });
 
       // 알림 클릭 시 앱으로 포커스

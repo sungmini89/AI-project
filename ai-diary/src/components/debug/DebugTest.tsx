@@ -62,4 +62,4 @@ const DebugTest: React.FC = () => {
 };
 
 // Only show in development
-export default process.env.NODE_ENV === 'development' ? DebugTest : () => null;
+export default import.meta.env.MODE === 'development' ? DebugTest : () => null;

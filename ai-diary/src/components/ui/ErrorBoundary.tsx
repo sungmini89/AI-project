@@ -50,7 +50,7 @@ class ErrorBoundary extends Component<Props, State> {
     toast.error('앱에서 오류가 발생했습니다. 페이지를 새로고침해주세요.');
 
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       // Here you would send error to logging service
       console.log('Production error logged:', {
         error: error.message,
@@ -90,7 +90,7 @@ class ErrorBoundary extends Component<Props, State> {
               </p>
             </div>
 
-            {process.env.NODE_ENV === 'development' && (
+            {import.meta.env.MODE === 'development' && (
               <details className="mb-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-500 mb-2">
                   오류 세부 정보 (개발 모드)

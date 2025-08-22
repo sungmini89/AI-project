@@ -31,6 +31,16 @@ interface TestSuite {
   status: 'pending' | 'running' | 'completed';
 }
 
+interface TestData {
+  sampleEntry?: any;
+  statistics?: any;
+  englishAnalysis?: any;
+  koreanAnalysis?: any;
+  manifest?: any;
+  viewport?: any;
+  [key: string]: any;
+}
+
 const ComprehensiveDebugPanel: React.FC = () => {
   const [testSuites, setTestSuites] = useState<TestSuite[]>([
     { name: 'Database Operations', tests: [], status: 'pending' },
@@ -41,7 +51,7 @@ const ComprehensiveDebugPanel: React.FC = () => {
   ]);
 
   const [isRunning, setIsRunning] = useState(false);
-  const [testData, setTestData] = useState<any>({});
+  const [testData, setTestData] = useState<TestData>({});
 
   const updateTestResult = (suiteIndex: number, testName: string, result: Omit<TestResult, 'name'>) => {
     setTestSuites(prev => prev.map((suite, idx) => {
