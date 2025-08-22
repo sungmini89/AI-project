@@ -205,14 +205,18 @@ class DatabaseService extends Dexie {
     try {
       await this.entries.add(entry);
 
-      // 감정 분석 결과가 있으면 히스토리에 추가
+      // 감정 분석 결과가 있으면 히스토리에 추가 (실패해도 일기 저장은 성공)
       if (entry.emotionAnalysis) {
-        await this.emotionHistory.add({
-          date: entry.createdAt,
-          emotion: entry.emotionAnalysis.primaryEmotion,
-          score: entry.emotionAnalysis.score,
-          entryId: entry.id,
-        });
+        try {
+          await this.emotionHistory.add({
+            date: entry.createdAt,
+            emotion: entry.emotionAnalysis.primaryEmotion,
+            score: entry.emotionAnalysis.score,
+            entryId: entry.id,
+          });
+        } catch (historyError) {
+          console.warn("감정 히스토리 저장 실패, 일기 저장은 성공:", historyError);
+        }
       }
 
       return entry.id;
@@ -232,26 +236,30 @@ class DatabaseService extends Dexie {
     try {
       await this.entries.update(entry.id, entry);
 
-      // 감정 분석 결과가 있으면 히스토리 업데이트
+      // 감정 분석 결과가 있으면 히스토리 업데이트 (실패해도 일기 수정은 성공)
       if (entry.emotionAnalysis) {
-        const existingHistory = await this.emotionHistory
-          .where("entryId")
-          .equals(entry.id)
-          .first();
+        try {
+          const existingHistory = await this.emotionHistory
+            .where("entryId")
+            .equals(entry.id)
+            .first();
 
-        if (existingHistory) {
-          await this.emotionHistory.update(existingHistory.id, {
-            emotion: entry.emotionAnalysis.primaryEmotion,
-            score: entry.emotionAnalysis.score,
-            date: entry.updatedAt,
-          });
-        } else {
-          await this.emotionHistory.add({
-            date: entry.updatedAt,
-            emotion: entry.emotionAnalysis.primaryEmotion,
-            score: entry.emotionAnalysis.score,
-            entryId: entry.id,
-          });
+          if (existingHistory) {
+            await this.emotionHistory.update(existingHistory.id, {
+              emotion: entry.emotionAnalysis.primaryEmotion,
+              score: entry.emotionAnalysis.score,
+              date: entry.updatedAt,
+            });
+          } else {
+            await this.emotionHistory.add({
+              date: entry.updatedAt,
+              emotion: entry.emotionAnalysis.primaryEmotion,
+              score: entry.emotionAnalysis.score,
+              entryId: entry.id,
+            });
+          }
+        } catch (historyError) {
+          console.warn("감정 히스토리 업데이트 실패, 일기 수정은 성공:", historyError);
         }
       }
     } catch (error) {

@@ -107,10 +107,26 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
       const content = editor.getHTML();
       const cleanContent = stripHtmlTags(content); // 순수 텍스트로 저장
 
-      // 감정 분석 수행
-      const analysisResult = await emotionAnalysisService.analyzeEmotion(
-        cleanContent
-      );
+      // 감정 분석 수행 (실패해도 일기 저장은 진행)
+      let analysisResult = null;
+      try {
+        analysisResult = await emotionAnalysisService.analyzeEmotion(
+          cleanContent
+        );
+      } catch (analysisError) {
+        console.warn("감정 분석 실패, 일기 저장은 계속 진행:", analysisError);
+        // 감정 분석 실패 시 기본값 사용
+        analysisResult = {
+          primaryEmotion: "neutral" as const,
+          score: 0,
+          confidence: 0,
+          words: { positive: [], negative: [] },
+          emotionScores: {
+            happy: 0, sad: 0, angry: 0, neutral: 1, excited: 0,
+            calm: 0, anxious: 0, proud: 0, disappointed: 0, grateful: 0
+          }
+        };
+      }
 
       const diaryEntry: DiaryEntry = {
         id:
@@ -140,11 +156,15 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
         );
       }
 
-      // 감정 분석 완료 알림
-      if (analysisResult) {
-        await notificationService.notifyEmotionAnalyzed(
-          analysisResult.primaryEmotion
-        );
+      // 감정 분석 완료 알림 (성공한 경우에만)
+      if (analysisResult && analysisResult.primaryEmotion !== "neutral") {
+        try {
+          await notificationService.notifyEmotionAnalyzed(
+            analysisResult.primaryEmotion
+          );
+        } catch (notificationError) {
+          console.warn("알림 전송 실패:", notificationError);
+        }
       }
 
       // 저장 성공 후 에디터 초기화 (새로 작성 모드인 경우)
