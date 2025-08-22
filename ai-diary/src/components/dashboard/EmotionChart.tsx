@@ -20,6 +20,7 @@ import {
 } from "../../services/emotionAnalysisService";
 import type { EmotionHistory } from "../../services/databaseService";
 import { databaseService } from "../../services/databaseService";
+import { useApp } from "../../contexts/AppContext";
 
 ChartJS.register(
   CategoryScale,
@@ -44,6 +45,7 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
   );
   const [timeRange, setTimeRange] = useState<"week" | "month" | "year">("week");
   const [emotionData, setEmotionData] = useState<EmotionHistory[]>([]);
+  const { language, isDark } = useApp();
 
   useEffect(() => {
     loadEmotionData();
@@ -74,6 +76,25 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
     } catch (error) {
       console.error("감정 데이터 로드 실패:", error);
     }
+  };
+
+  // 감정 이름을 한국어로 번역하는 함수
+  const getEmotionName = (emotion: string) => {
+    const emotionNames: Record<string, { ko: string; en: string }> = {
+      happy: { ko: "행복", en: "Happy" },
+      sad: { ko: "슬픔", en: "Sad" },
+      angry: { ko: "화남", en: "Angry" },
+      neutral: { ko: "중립", en: "Neutral" },
+      excited: { ko: "흥분", en: "Excited" },
+      calm: { ko: "차분", en: "Calm" },
+      anxious: { ko: "불안", en: "Anxious" },
+      proud: { ko: "자랑", en: "Proud" },
+      disappointed: { ko: "실망", en: "Disappointed" },
+      grateful: { ko: "감사", en: "Grateful" },
+    };
+
+    const emotionData = emotionNames[emotion] || { ko: emotion, en: emotion };
+    return language === "ko" ? emotionData.ko : emotionData.en;
   };
 
   const getEmotionCounts = () => {
@@ -136,8 +157,10 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
 
   const getBarChartData = () => {
     const counts = getEmotionCounts();
+
     const labels = Object.keys(counts).map(
-      (emotion) => `${EMOTION_EMOJIS[emotion as EmotionType]} ${emotion}`
+      (emotion) =>
+        `${EMOTION_EMOJIS[emotion as EmotionType]} ${getEmotionName(emotion)}`
     );
     const data = Object.values(counts);
 
@@ -145,7 +168,7 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
       labels,
       datasets: [
         {
-          label: "감정 발생 횟수",
+          label: language === "ko" ? "감정 발생 횟수" : "Emotion Frequency",
           data,
           backgroundColor: Object.keys(counts).map(
             (emotion) => EMOTION_COLORS[emotion as EmotionType]
@@ -162,7 +185,8 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
   const getDoughnutChartData = () => {
     const counts = getEmotionCounts();
     const labels = Object.keys(counts).map(
-      (emotion) => `${EMOTION_EMOJIS[emotion as EmotionType]} ${emotion}`
+      (emotion) =>
+        `${EMOTION_EMOJIS[emotion as EmotionType]} ${getEmotionName(emotion)}`
     );
     const data = Object.values(counts);
 
@@ -170,7 +194,7 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
       labels,
       datasets: [
         {
-          label: "감정 분포",
+          label: language === "ko" ? "감정 분포" : "Emotion Distribution",
           data,
           backgroundColor: Object.keys(counts).map(
             (emotion) => EMOTION_COLORS[emotion as EmotionType]
@@ -186,14 +210,14 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
 
   const getLineChartData = () => {
     const overallScores = getOverallScores();
-    const labels = overallScores.map((item) => item.emotion);
+    const labels = overallScores.map((item) => getEmotionName(item.emotion));
     const data = overallScores.map((item) => item.score);
 
     return {
       labels,
       datasets: [
         {
-          label: "평균 감정 점수",
+          label: language === "ko" ? "평균 감정 점수" : "Average Emotion Score",
           data,
           backgroundColor: overallScores.map(
             (_score, index) => EMOTION_COLORS[labels[index] as EmotionType]
@@ -228,16 +252,44 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
       plugins: {
         legend: {
           position: "top" as const,
+          labels: {
+            color: isDark ? "#f9fafb" : "#111827",
+          },
         },
         title: {
           display: true,
           text: `${
             timeRange === "week"
-              ? "주간"
+              ? language === "ko"
+                ? "주간"
+                : "Weekly"
               : timeRange === "month"
-              ? "월간"
-              : "연간"
-          } 감정 분석`,
+              ? language === "ko"
+                ? "월간"
+                : "Monthly"
+              : language === "ko"
+              ? "연간"
+              : "Yearly"
+          } ${language === "ko" ? "감정 분석" : "Emotion Analysis"}`,
+          color: isDark ? "#f9fafb" : "#111827",
+        },
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: isDark ? "#f9fafb" : "#111827",
+          },
+          grid: {
+            color: isDark ? "#374151" : "#e5e7eb",
+          },
+        },
+        y: {
+          ticks: {
+            color: isDark ? "#f9fafb" : "#111827",
+          },
+          grid: {
+            color: isDark ? "#374151" : "#e5e7eb",
+          },
         },
       },
     };
@@ -247,7 +299,9 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
         return {
           ...baseOptions,
           scales: {
+            ...baseOptions.scales,
             y: {
+              ...baseOptions.scales.y,
               beginAtZero: true,
               ticks: {
                 stepSize: 1,
@@ -259,7 +313,9 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
         return {
           ...baseOptions,
           scales: {
+            ...baseOptions.scales,
             y: {
+              ...baseOptions.scales.y,
               beginAtZero: true,
               max: 5,
               ticks: {
@@ -292,35 +348,69 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
   return (
     <div className={`emotion-chart ${className}`}>
       {/* 차트 컨트롤 */}
-      <div className="chart-controls">
-        <div className="control-group">
-          <label className="control-label">차트 유형:</label>
-          <select
-            value={chartType}
-            onChange={(e) =>
-              setChartType(e.target.value as "bar" | "doughnut" | "line")
-            }
-            className="control-select"
-          >
-            <option value="bar">막대 차트</option>
-            <option value="doughnut">도넛 차트</option>
-            <option value="line">선 차트</option>
-          </select>
-        </div>
+      <div className="chart-controls mb-4">
+        <div className="flex flex-wrap gap-4">
+          <div className="control-group">
+            <label
+              className={`control-label block text-sm font-medium mb-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {language === "ko" ? "차트 유형:" : "Chart Type:"}
+            </label>
+            <select
+              value={chartType}
+              onChange={(e) =>
+                setChartType(e.target.value as "bar" | "doughnut" | "line")
+              }
+              className={`control-select px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                isDark
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+            >
+              <option value="bar">
+                {language === "ko" ? "막대 차트" : "Bar Chart"}
+              </option>
+              <option value="doughnut">
+                {language === "ko" ? "도넛 차트" : "Doughnut Chart"}
+              </option>
+              <option value="line">
+                {language === "ko" ? "선 차트" : "Line Chart"}
+              </option>
+            </select>
+          </div>
 
-        <div className="control-group">
-          <label className="control-label">시간 범위:</label>
-          <select
-            value={timeRange}
-            onChange={(e) =>
-              setTimeRange(e.target.value as "week" | "month" | "year")
-            }
-            className="control-select"
-          >
-            <option value="week">주간</option>
-            <option value="month">월간</option>
-            <option value="year">연간</option>
-          </select>
+          <div className="control-group">
+            <label
+              className={`control-label block text-sm font-medium mb-2 ${
+                isDark ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {language === "ko" ? "시간 범위:" : "Time Range:"}
+            </label>
+            <select
+              value={timeRange}
+              onChange={(e) =>
+                setTimeRange(e.target.value as "week" | "month" | "year")
+              }
+              className={`control-select px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                isDark
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-900"
+              }`}
+            >
+              <option value="week">
+                {language === "ko" ? "주간" : "Weekly"}
+              </option>
+              <option value="month">
+                {language === "ko" ? "월간" : "Monthly"}
+              </option>
+              <option value="year">
+                {language === "ko" ? "연간" : "Yearly"}
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -329,8 +419,16 @@ const EmotionChart: React.FC<EmotionChartProps> = ({ className = "" }) => {
         {emotionData.length > 0 ? (
           renderChart()
         ) : (
-          <div className="no-data">
-            <p>선택한 기간에 감정 데이터가 없습니다.</p>
+          <div
+            className={`no-data text-center py-8 ${
+              isDark ? "text-gray-300" : "text-gray-600"
+            }`}
+          >
+            <p>
+              {language === "ko"
+                ? "선택한 기간에 감정 데이터가 없습니다."
+                : "No emotion data available for the selected period."}
+            </p>
           </div>
         )}
       </div>

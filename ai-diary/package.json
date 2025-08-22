@@ -8,7 +8,15 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:all": "node scripts/run-all-tests.cjs",
+    "debug:health": "node scripts/debug-health-check.cjs",
+    "debug:install": "npx playwright install",
+    "debug:deps": "npm outdated && npm audit"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.16",
@@ -28,6 +36,7 @@
     "sentiment": "^5.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@types/sentiment": "^5.0.1",

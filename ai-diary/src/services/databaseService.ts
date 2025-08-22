@@ -1,92 +1,205 @@
 import Dexie, { type Table } from "dexie";
-import type {
-  EmotionAnalysisResult,
-  EmotionType,
-} from "./emotionAnalysisService";
+import type { EmotionType } from "./emotionAnalysisService";
 
+/**
+ * 일기 항목 인터페이스
+ * 사용자가 작성한 일기의 기본 정보와 감정 분석 결과를 포함합니다.
+ */
 export interface DiaryEntry {
+  /** 고유 식별자 */
   id: string;
+  /** 일기 제목 */
   title: string;
+  /** 일기 내용 */
   content: string;
+  /** 작성 시간 */
   createdAt: Date;
+  /** 마지막 수정 시간 */
   updatedAt: Date;
-  emotionAnalysis?: EmotionAnalysisResult | null;
+  /** 감정 분석 결과 (선택사항) */
+  emotionAnalysis?: EmotionAnalysisResult;
 }
 
-export interface EmotionHistory {
-  id: string;
-  date: Date;
-  emotion: EmotionType;
+/**
+ * 감정 분석 결과 인터페이스
+ * AI 서비스를 통해 분석된 감정 정보를 포함합니다.
+ */
+export interface EmotionAnalysisResult {
+  /** 주요 감정 */
+  primaryEmotion: EmotionType;
+  /** 감정 점수 (-5 ~ +5) */
   score: number;
+  /** 긍정적 키워드들 */
+  words: {
+    positive: string[];
+    negative: string[];
+  };
+  /** 분석 신뢰도 */
+  confidence: number;
+}
+
+/**
+ * 감정 히스토리 인터페이스
+ * 날짜별 감정 분석 결과를 추적하기 위한 기록입니다.
+ */
+export interface EmotionHistory {
+  /** 고유 식별자 */
+  id?: number;
+  /** 감정 분석 날짜 */
+  date: Date;
+  /** 감정 타입 */
+  emotion: EmotionType;
+  /** 감정 점수 */
+  score: number;
+  /** 관련 일기 ID */
   entryId: string;
 }
 
+/**
+ * 통계 정보 인터페이스
+ * 일기 데이터를 기반으로 계산된 종합적인 통계를 제공합니다.
+ */
 export interface Statistics {
+  /** 총 일기 수 */
   totalEntries: number;
+  /** 평균 감정 점수 */
   averageEmotionScore: number;
+  /** 가장 빈번한 감정 */
   mostFrequentEmotion: EmotionType;
+  /** 감정별 분포 */
   emotionDistribution: Record<EmotionType, number>;
+  /** 주간 트렌드 데이터 */
   weeklyTrend: { date: string; score: number }[];
 }
 
+/**
+ * 앱 설정 인터페이스
+ * 사용자의 테마, 언어, 자동 저장 등의 개인 설정을 관리합니다.
+ */
 export interface AppSettings {
-  theme: "light" | "dark" | "auto";
+  /** 고유 식별자 */
+  id?: number;
+  /** 테마 설정 (라이트/다크) */
+  theme: "light" | "dark";
+  /** 언어 설정 (한국어/영어) */
   language: "ko" | "en";
+  /** 자동 저장 활성화 여부 */
   autoSave: boolean;
+  /** 자동 저장 간격 (밀리초) */
   autoSaveInterval: number;
+  /** 알림 활성화 여부 */
   notifications: boolean;
+  /** 백업 활성화 여부 */
   backupEnabled: boolean;
+  /** 백업 간격 (일) */
   backupInterval: number;
 }
 
+/**
+ * 백업 데이터 인터페이스
+ * 데이터 백업 및 복원을 위한 구조입니다.
+ */
 export interface BackupData {
+  /** 고유 식별자 */
   id?: number;
+  /** 백업 생성 시간 */
   timestamp: Date;
+  /** 백업된 데이터 */
   data: {
     entries: DiaryEntry[];
     emotionHistory: EmotionHistory[];
     settings: AppSettings;
   };
+  /** 백업 버전 */
   version: string;
 }
 
+/**
+ * 데이터베이스 서비스 클래스
+ *
+ * IndexedDB를 기반으로 한 클라이언트 사이드 데이터베이스 관리 서비스입니다.
+ * Dexie.js를 사용하여 일기, 감정 분석, 설정, 백업 등의 데이터를 관리합니다.
+ *
+ * 주요 기능:
+ * - 일기 CRUD 작업
+ * - 감정 분석 결과 저장 및 조회
+ * - 사용자 설정 관리
+ * - 데이터 백업 및 복원
+ * - 통계 데이터 생성
+ */
 class DatabaseService extends Dexie {
+  /** 일기 테이블 */
   entries!: Table<DiaryEntry>;
+  /** 감정 히스토리 테이블 */
   emotionHistory!: Table<EmotionHistory>;
+  /** 설정 테이블 */
   settings!: Table<AppSettings>;
+  /** 백업 테이블 */
   backups!: Table<BackupData>;
 
   constructor() {
     super("AIDiaryDB");
 
-    this.version(1).stores({
-      entries: "id, createdAt, updatedAt",
-      emotionHistory: "id, date, emotion, entryId",
-      settings: "id",
-      backups: "++id, timestamp",
-    });
+    // 단일 버전으로 통합하여 스키마 관리
+    this.version(1)
+      .stores({
+        entries: "id, createdAt, updatedAt",
+        emotionHistory: "id, date, emotion, entryId",
+        settings: "++id",
+        backups: "++id, timestamp",
+      })
+      .upgrade(async (tx) => {
+        // 기존 설정 테이블 초기화
+        await tx.table("settings").clear();
 
+        // 기본 설정 추가 (id는 자동 생성)
+        await tx.table("settings").add({
+          theme: "light",
+          language: "ko",
+          autoSave: true,
+          autoSaveInterval: 30000,
+          notifications: true,
+          backupEnabled: true,
+          backupInterval: 7,
+        });
+      });
+
+    // 데이터베이스 준비 완료 시 초기화
     this.on("ready", () => {
       this.initializeDefaultSettings();
     });
   }
 
+  /**
+   * 기본 설정을 초기화합니다.
+   * 설정 테이블이 비어있을 때 기본값을 추가합니다.
+   */
   private async initializeDefaultSettings() {
-    const existingSettings = await this.settings.get(1);
-    if (!existingSettings) {
-      await this.settings.add({
-        theme: "auto",
-        language: "ko",
-        autoSave: true,
-        autoSaveInterval: 30000,
-        notifications: true,
-        backupEnabled: true,
-        backupInterval: 7,
-      });
+    try {
+      const count = await this.settings.count();
+      if (count === 0) {
+        await this.settings.add({
+          theme: "light",
+          language: "ko",
+          autoSave: true,
+          autoSaveInterval: 30000,
+          notifications: true,
+          backupEnabled: true,
+          backupInterval: 7,
+        });
+        console.log("기본 설정이 초기화되었습니다.");
+      }
+    } catch (error) {
+      console.error("기본 설정 초기화 실패:", error);
     }
   }
 
-  // 일기 관련 메서드
+  /**
+   * 새로운 일기를 추가합니다.
+   *
+   * @param entry - 추가할 일기 데이터
+   * @returns 생성된 일기의 ID
+   */
   async addEntry(entry: DiaryEntry): Promise<string> {
     try {
       await this.entries.add(entry);
@@ -94,7 +207,6 @@ class DatabaseService extends Dexie {
       // 감정 분석 결과가 있으면 히스토리에 추가
       if (entry.emotionAnalysis) {
         await this.emotionHistory.add({
-          id: Date.now().toString(),
           date: entry.createdAt,
           emotion: entry.emotionAnalysis.primaryEmotion,
           score: entry.emotionAnalysis.score,
@@ -105,7 +217,7 @@ class DatabaseService extends Dexie {
       return entry.id;
     } catch (error) {
       console.error("일기 추가 실패:", error);
-      throw new Error("일기를 저장할 수 없습니다.");
+      throw error;
     }
   }
 
@@ -128,7 +240,6 @@ class DatabaseService extends Dexie {
           });
         } else {
           await this.emotionHistory.add({
-            id: Date.now().toString(),
             date: entry.updatedAt,
             emotion: entry.emotionAnalysis.primaryEmotion,
             score: entry.emotionAnalysis.score,
@@ -335,20 +446,63 @@ class DatabaseService extends Dexie {
   // 설정 관련 메서드
   async getSettings(): Promise<AppSettings> {
     try {
-      const settings = await this.settings.get(1);
+      let settings = await this.settings.toCollection().first();
       if (!settings) {
-        throw new Error("설정을 찾을 수 없습니다.");
+        // 설정이 없으면 기본 설정을 생성하고 반환
+        const defaultSettings = {
+          theme: "light" as const,
+          language: "ko" as const,
+          autoSave: true,
+          autoSaveInterval: 30000,
+          notifications: true,
+          backupEnabled: true,
+          backupInterval: 7,
+        };
+
+        const id = await this.settings.add(defaultSettings);
+        settings = await this.settings.get(id);
       }
-      return settings;
+      return settings!;
     } catch (error) {
       console.error("설정 조회 실패:", error);
-      throw new Error("설정을 조회할 수 없습니다.");
+      // 에러 발생 시에도 기본 설정 반환
+      return {
+        id: 1,
+        theme: "light",
+        language: "ko",
+        autoSave: true,
+        autoSaveInterval: 30000,
+        notifications: true,
+        backupEnabled: true,
+        backupInterval: 7,
+      };
     }
   }
 
   async updateSettings(settings: Partial<AppSettings>): Promise<void> {
     try {
-      await this.settings.update(1, settings);
+      // 첫 번째 설정 가져오기
+      const existingSettings = await this.settings.toCollection().first();
+
+      if (existingSettings && existingSettings.id) {
+        // 기존 설정 업데이트
+        await this.settings.update(existingSettings.id, settings);
+        console.log("기존 설정이 업데이트되었습니다:", settings);
+      } else {
+        // 설정이 없으면 새로 생성
+        const defaultSettings = {
+          theme: "light" as const,
+          language: "ko" as const,
+          autoSave: true,
+          autoSaveInterval: 30000,
+          notifications: true,
+          backupEnabled: true,
+          backupInterval: 7,
+          ...settings, // 전달받은 설정으로 오버라이드
+        };
+        await this.settings.add(defaultSettings);
+        console.log("새 설정이 생성되었습니다:", defaultSettings);
+      }
     } catch (error) {
       console.error("설정 업데이트 실패:", error);
       throw new Error("설정을 업데이트할 수 없습니다.");
