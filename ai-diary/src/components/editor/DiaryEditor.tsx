@@ -323,56 +323,40 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
           isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-200"
         }`}
       >
-        {/* 헤더 */}
+        {/* 제목 입력 영역 */}
         <div
           className={`border-b p-6 ${
             isDark ? "border-gray-700" : "border-gray-200"
           }`}
         >
-          <input
-            type="text"
-            name="title"
-            data-testid="diary-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={
-              language === "ko"
-                ? "일기 제목을 입력하세요..."
-                : "Enter diary title..."
-            }
-            className={`w-full text-2xl font-bold placeholder-gray-500 border-none outline-none focus:ring-0 bg-transparent ${
-              isDark
-                ? "text-white placeholder-gray-400"
-                : "text-gray-900 placeholder-gray-500"
-            }`}
-          />
-
-          <div className="flex items-center justify-between mt-4">
-            <div
-              className={`text-sm ${
-                isDark ? "text-gray-400" : "text-gray-500"
+          <div className="flex items-start justify-between">
+            <input
+              type="text"
+              name="title"
+              data-testid="diary-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={
+                language === "ko"
+                  ? "일기 제목을 입력하세요..."
+                  : "Enter diary title..."
+              }
+              className={`flex-1 text-2xl font-bold placeholder-gray-500 border-none outline-none focus:ring-0 bg-transparent mr-4 ${
+                isDark
+                  ? "text-white placeholder-gray-400"
+                  : "text-gray-900 placeholder-gray-500"
               }`}
-            >
-              {entry?.createdAt &&
-                new Date(entry.createdAt).toLocaleDateString(
-                  language === "ko" ? "ko" : "en-US",
-                  {
-                    month: "numeric",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                  }
-                )}
-            </div>
-
-            <div className="flex items-center space-x-2">
+            />
+            
+            {/* 액션 버튼들 */}
+            <div className="flex items-center space-x-2 flex-shrink-0">
               <button
                 onClick={handleSave}
                 disabled={isSaving || isAnalyzing}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 title={language === "ko" ? "저장" : "Save"}
               >
-                <span className="text-sm">
+                <span className="text-sm font-medium">
                   {isSaving
                     ? language === "ko"
                       ? "저장 중..."
@@ -386,36 +370,55 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
               <button
                 onClick={handleCancel}
                 disabled={isSaving || isAnalyzing}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed ${
+                className={`px-4 py-2 rounded-lg transition-colors disabled:cursor-not-allowed ${
                   isDark
                     ? "text-gray-300 hover:text-white hover:bg-gray-700 disabled:text-gray-600"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:text-gray-400"
                 }`}
                 title={language === "ko" ? "취소" : "Cancel"}
               >
-                <span className="text-sm">
+                <span className="text-sm font-medium">
                   {language === "ko" ? "취소" : "Cancel"}
                 </span>
               </button>
             </div>
           </div>
+
+          {/* 날짜 표시 */}
+          {entry?.createdAt && (
+            <div
+              className={`text-sm mt-2 ${
+                isDark ? "text-gray-400" : "text-gray-500"
+              }`}
+            >
+              {new Date(entry.createdAt).toLocaleDateString(
+                language === "ko" ? "ko" : "en-US",
+                {
+                  month: "numeric",
+                  day: "numeric",
+                  hour: "numeric",
+                  minute: "numeric",
+                }
+              )}
+            </div>
+          )}
         </div>
 
-        {/* 에디터 */}
-        <div className="mt-6">
+        {/* 내용 입력 영역 */}
+        <div className="p-6">
           <EditorContent editor={editor} />
         </div>
 
         {/* 감정 분석 결과 표시 */}
         {entry?.emotionAnalysis && (
-          <div className="mt-6" data-testid="emotion-result">
+          <div className="px-6 pb-6" data-testid="emotion-result">
             {getEmotionDisplay(entry.emotionAnalysis)}
           </div>
         )}
 
         {/* 로딩 상태 표시 */}
         {(isSaving || isAnalyzing) && (
-          <div className="mt-6 text-center">
+          <div className="px-6 pb-6 text-center">
             <div className="inline-flex items-center space-x-2 text-gray-600">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
               <span>
