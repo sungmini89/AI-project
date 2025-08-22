@@ -45,6 +45,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
   const [title, setTitle] = useState(entry?.title || "");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<EmotionAnalysisResult | null>(null);
 
   /**
    * Tiptap 에디터 인스턴스를 생성합니다.
@@ -76,13 +77,21 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
   };
 
   /**
-   * 제목과 내용을 검증하고, 감정 분석을 수행한 후 데이터베이스에 저장합니다.
+   * 제목과 내용을 검증하고, 감정 분석 결과를 사용하여 데이터베이스에 저장합니다.
    *
    * @returns Promise<void>
    */
   const handleSave = async () => {
     // 이미 저장 중이면 중복 실행 방지
     if (isSaving) {
+      return;
+    }
+
+    // 감정 분석이 완료되지 않았으면 저장 불가
+    if (!analysisResult) {
+      toast.error(
+        language === "ko" ? "먼저 감정 분석을 완료해주세요." : "Please complete emotion analysis first."
+      );
       return;
     }
 
@@ -101,40 +110,10 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
     }
 
     setIsSaving(true);
-    setIsAnalyzing(true);
 
     try {
       const content = editor.getHTML();
       const cleanContent = stripHtmlTags(content); // 순수 텍스트로 저장
-
-      // 감정 분석 수행 (실패해도 일기 저장은 진행)
-      let analysisResult = null;
-      try {
-        analysisResult = await emotionAnalysisService.analyzeEmotion(
-          cleanContent
-        );
-      } catch (analysisError) {
-        console.warn("감정 분석 실패, 일기 저장은 계속 진행:", analysisError);
-        // 감정 분석 실패 시 기본값 사용
-        analysisResult = {
-          primaryEmotion: "neutral" as const,
-          score: 0,
-          confidence: 0,
-          words: { positive: [], negative: [] },
-          emotionScores: {
-            happy: 0,
-            sad: 0,
-            angry: 0,
-            neutral: 1,
-            excited: 0,
-            calm: 0,
-            anxious: 0,
-            proud: 0,
-            disappointed: 0,
-            grateful: 0,
-          },
-        };
-      }
 
       const diaryEntry: DiaryEntry = {
         id:
@@ -144,7 +123,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
         content: cleanContent, // 순수 텍스트로 저장
         createdAt: entry?.createdAt || new Date(),
         updatedAt: new Date(),
-        emotionAnalysis: analysisResult,
+        emotionAnalysis: analysisResult, // 분석된 결과 사용
       };
 
       // 실제 저장 수행
@@ -179,6 +158,7 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
       if (!entry) {
         setTitle("");
         editor?.commands.setContent("");
+        setAnalysisResult(null); // 분석 결과도 초기화
       }
 
       // 저장 성공 시 onSave 콜백 호출 (별도 try-catch로 처리)
@@ -199,7 +179,6 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
       );
     } finally {
       setIsSaving(false);
-      setIsAnalyzing(false);
     }
   };
 
@@ -347,12 +326,65 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
                   : "text-gray-900 placeholder-gray-500"
               }`}
             />
-            
+ 
             {/* 액션 버튼들 */}
             <div className="flex items-center space-x-2 flex-shrink-0">
+              {/* 감정 분석 버튼 */}
+              <button
+                onClick={async () => {
+                  if (!title.trim()) {
+                    toast.error(
+                      language === "ko" ? "제목을 입력해주세요." : "Please enter a title."
+                    );
+                    return;
+                  }
+                  if (!editor?.getHTML() || editor.getHTML().trim() === "<p></p>") {
+                    toast.error(
+                      language === "ko" ? "내용을 입력해주세요." : "Please enter content."
+                    );
+                    return;
+                  }
+                  
+                  setIsAnalyzing(true);
+                  try {
+                    const content = editor.getHTML();
+                    const cleanContent = stripHtmlTags(content);
+                    const analysisResult = await emotionAnalysisService.analyzeEmotion(cleanContent);
+                    
+                    // 분석 결과를 상태에 저장
+                    setAnalysisResult(analysisResult);
+                    
+                    toast.success(
+                      language === "ko" ? "감정 분석이 완료되었습니다." : "Emotion analysis completed."
+                    );
+                  } catch (error) {
+                    console.error("감정 분석 실패:", error);
+                    toast.error(
+                      language === "ko" ? "감정 분석에 실패했습니다." : "Emotion analysis failed."
+                    );
+                  } finally {
+                    setIsAnalyzing(false);
+                  }
+                }}
+                disabled={isAnalyzing || isSaving}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                title={language === "ko" ? "감정 분석" : "Analyze Emotion"}
+              >
+                <span className="text-sm font-medium">
+                  {isAnalyzing
+                    ? language === "ko"
+                      ? "분석 중..."
+                      : "Analyzing..."
+                    : language === "ko"
+                    ? "분석"
+                    : "Analyze"}
+                </span>
+              </button>
+
+              {/* 저장 버튼 */}
               <button
                 onClick={handleSave}
-                disabled={isSaving || isAnalyzing}
+                disabled={isSaving || isAnalyzing || !analysisResult}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 title={language === "ko" ? "저장" : "Save"}
               >
@@ -410,9 +442,16 @@ const DiaryEditor: React.FC<DiaryEditorProps> = ({
         </div>
 
         {/* 감정 분석 결과 표시 */}
-        {entry?.emotionAnalysis && (
-          <div className="px-6 pb-6" data-testid="emotion-result">
-            {getEmotionDisplay(entry.emotionAnalysis)}
+        {analysisResult && (
+          <div className="px-6 pb-6 border-t border-gray-200" data-testid="emotion-result">
+            <div className="pt-4">
+              <h4 className={`text-lg font-semibold mb-3 ${
+                isDark ? "text-white" : "text-gray-900"
+              }`}>
+                {language === "ko" ? "감정 분석 결과" : "Emotion Analysis Result"}
+              </h4>
+              {getEmotionDisplay(analysisResult)}
+            </div>
           </div>
         )}
 
