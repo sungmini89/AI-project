@@ -1,0 +1,36 @@
+/**
+ * TypeScript 프로젝트 설정 파일
+ * AI Recipe 애플리케이션의 TypeScript 컴파일러 옵션을 정의합니다.
+ * 
+ * @description
+ * - 프로젝트 참조 구조 설정
+ * - 경로 별칭 및 모듈 해석 설정
+ * - TypeScript 컴파일러 기본 옵션
+ * - 모노레포 구조 지원
+ * 
+ * @features
+ * - 프로젝트 참조를 통한 모듈화
+ * - @/* 경로 별칭으로 src 디렉토리 접근
+ * - 앱 및 노드 환경별 설정 분리
+ * - TypeScript 프로젝트 구조 최적화
+ * 
+ * @author AI Recipe Team
+ * @version 1.0.0
+ */
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

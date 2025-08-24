@@ -1,0 +1,193 @@
+# AI Recipe Generator - Product Requirements Document (PRD)
+
+## 1. 프로젝트 개요
+
+**프로젝트명**: AI Recipe Generator
+**개발 프레임워크**: React + TypeScript + Vite + Tailwind CSS + shadcn/ui + Magic UI
+**배포 플랫폼**: Vercel
+**개발 방식**: Frontend-developer Agent + MCP 도구 협업
+
+## 2. 핵심 기능
+
+### 2.1 재료 기반 레시피 생성
+- 태그 기반 재료 입력 시스템 (shadcn/ui 기반)
+- 자동완성 및 재료 데이터베이스 활용
+- 다중 재료 조합 및 필터링 기능
+- 영양 목표 설정 (칼로리, 단백질, 탄수화물 등)
+
+### 2.2 다중 API 통합
+- **Primary**: Spoonacular API (150 daily requests)
+- **Secondary**: Edamam Recipe API (10k monthly requests)  
+- **Fallback**: Local recipes.json file (1000+ recipes)
+- **Development**: Mock API mode
+- API 사용량 실시간 추적 및 알림
+
+### 2.3 레시피 결과 표시
+- 반응형 레시피 카드 레이아웃 (Magic UI 애니메이션)
+- 영양 정보 시각화 (Progress bars, 차트)
+- 조리 시간, 난이도, 서빙 크기 표시
+- 저장/즐겨찾기 기능
+
+### 2.4 오프라인 기능
+- PWA 지원으로 오프라인 접근 가능
+- 로컬 레시피 데이터베이스 (recipes.json)
+- Service Worker 캐싱으로 빠른 로딩
+- 네트워크 상태 감지 및 자동 동기화
+
+### 2.5 저장된 레시피 관리
+- 개인 레시피 갤러리
+- 카테고리별 정리 (아침, 점심, 저녁, 간식)
+- 레시피 검색 및 필터링
+- PDF/이미지 내보내기 기능
+
+## 3. 기술 요구사항
+
+### 3.1 프론트엔드 기술 스택
+- **Build Tool**: Vite
+- **Framework**: React 18 + TypeScript
+- **Styling**: Tailwind CSS + shadcn/ui
+- **Animations**: Magic UI
+- **State Management**: React Context + Custom Hooks
+- **Routing**: React Router v6
+- **Forms**: React Hook Form + Zod validation
+
+### 3.2 API & 서비스
+- Spoonacular Recipe API
+- Edamam Recipe Search API  
+- 자체 오프라인 레시피 데이터베이스
+- LocalStorage 기반 사용자 설정 관리
+
+### 3.3 PWA 기능
+- Service Worker 구현
+- 앱 매니페스트 설정
+- 오프라인 캐싱 전략
+- 푸시 알림 (선택적)
+
+### 3.4 성능 및 접근성
+- Core Web Vitals 최적화 (LCP < 2.5s, FID < 100ms, CLS < 0.1)
+- WCAG 2.1 AA 접근성 준수
+- 반응형 디자인 (모바일 우선)
+- 이미지 최적화 및 Lazy Loading
+
+## 4. 사용자 플로우
+
+### 4.1 메인 플로우
+1. 홈페이지 접속 → API 상태 확인
+2. 재료 입력 (태그 형식) → 자동완성 활용
+3. 추가 옵션 설정 (영양 목표, 조리 시간, 난이도)
+4. 레시피 생성 → 다중 API 검색 및 결과 병합
+5. 결과 표시 → 영양 정보와 함께 레시피 카드
+6. 레시피 선택 → 상세 정보 및 저장 옵션
+
+### 4.2 저장된 레시피 관리
+1. 저장된 레시피 갤러리 접속
+2. 검색/필터링으로 레시피 찾기
+3. 레시피 상세보기 → 편집/삭제/공유 옵션
+4. 카테고리 관리 및 태그 추가
+
+### 4.3 오프라인 사용
+1. 네트워크 연결 끊김 감지
+2. 오프라인 모드 알림 표시
+3. 로컬 데이터베이스에서 레시피 검색
+4. 네트워크 복구 시 자동 동기화
+
+## 5. UI/UX 요구사항
+
+### 5.1 디자인 시스템
+- **Color Palette**: 음식 테마 (오렌지, 그린, 브라운)
+- **Typography**: 가독성 높은 폰트 (Pretendard/Inter)
+- **Components**: shadcn/ui 기반 커스터마이징
+- **Animations**: Magic UI를 활용한 부드러운 전환
+
+### 5.2 반응형 디자인
+- **Mobile First**: 320px부터 지원
+- **Tablet**: 768px 이상 (2열 레이아웃)
+- **Desktop**: 1024px 이상 (3-4열 레이아웃)
+- **Large Screen**: 1440px 이상 (최대 너비 제한)
+
+### 5.3 사용자 경험
+- 빠른 로딩 속도 (Skeleton 로딩 상태)
+- 직관적인 네비게이션
+- 명확한 피드백 (토스트, 알림)
+- 에러 상황에 대한 친화적 안내
+
+## 6. 개발 우선순위
+
+### Phase 1: 기반 설정 (1-2일)
+- Vite + React + TypeScript 프로젝트 설정
+- shadcn/ui 설치 및 기본 컴포넌트 설정
+- 프로젝트 구조 및 환경변수 설정
+- API 서비스 레이어 기본 구조
+
+### Phase 2: 핵심 UI 개발 (3-4일)
+- 재료 입력 컴포넌트 (태그 입력, 자동완성)
+- 레시피 카드 컴포넌트 (영양 정보 포함)
+- 메인 페이지 레이아웃
+- 기본 라우팅 설정
+
+### Phase 3: API 통합 (2-3일)
+- Spoonacular API 통합
+- Edamam API 통합  
+- 오프라인 데이터베이스 설정
+- API 사용량 추적 시스템
+
+### Phase 4: 고급 기능 (2-3일)
+- 저장된 레시피 관리
+- PWA 설정 (Service Worker, Manifest)
+- 성능 최적화
+- 접근성 개선
+
+### Phase 5: 테스트 및 배포 (1-2일)
+- Playwright E2E 테스트 작성
+- Vercel 배포 설정
+- 성능 및 접근성 감사
+- 최종 QA 및 버그 수정
+
+## 7. 성공 기준
+
+### 7.1 기능적 성공 기준
+- 다중 API 통합으로 레시피 생성 성공률 95%+
+- 오프라인 모드에서 기본 기능 100% 동작
+- API 사용량 추적 정확도 99%+
+- 저장된 레시피 관리 기능 완전 구현
+
+### 7.2 성능 기준
+- Lighthouse Performance Score 90+
+- 첫 페이지 로드 시간 < 2초
+- API 응답 후 결과 표시 < 1초
+- PWA 설치 가능 및 오프라인 동작
+
+### 7.3 접근성 기준
+- WCAG 2.1 AA 100% 준수
+- 키보드 네비게이션 완전 지원
+- 스크린 리더 호환성
+- Color contrast ratio 4.5:1 이상
+
+## 8. 리스크 및 제약사항
+
+### 8.1 기술적 리스크
+- API 사용량 초과 시 서비스 중단 가능성
+- 외부 API 의존성으로 인한 서비스 안정성
+- 오프라인 데이터베이스 용량 제한
+
+### 8.2 해결 방안
+- 다중 API fallback 시스템 구현
+- 로컬 데이터베이스 백업 시스템
+- API 사용량 실시간 모니터링
+- 사용자 알림 시스템 구축
+
+## 9. 후속 개발 계획
+
+### 9.1 단기 계획 (1-2개월)
+- 다국어 지원 (영어, 일본어)
+- 레시피 평가 및 리뷰 시스템
+- 소셜 공유 기능
+- 더 많은 API 제공자 추가
+
+### 9.2 장기 계획 (3-6개월)
+- AI 기반 개인화 추천
+- 식단 계획 기능
+- 장보기 목록 생성
+- 모바일 앱 개발 (React Native)
+
+이 PRD는 Frontend-developer Agent와 MCP 도구들의 협업을 최적화하여 효율적인 개발이 가능하도록 설계되었습니다.

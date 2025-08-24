@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__taskmaster-ai__initialize_project",
+      "mcp__taskmaster-ai__parse_prd",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__filesystem__write_file",
+      "mcp__filesystem__create_directory",
+      "Bash(npx shadcn:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "mcp__playwright__playwright_navigate",
+      "Bash(npx playwright install:*)",
+      "mcp__filesystem__read_multiple_files",
+      "mcp__filesystem__list_directory",
+      "Bash(npx playwright test:*)"
+    ]
+  },
+  "outputStyle": "korean-concise"
+}

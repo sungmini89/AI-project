@@ -1,0 +1,79 @@
+/**
+ * TypeScript 애플리케이션 설정 파일
+ * AI Recipe 애플리케이션의 클라이언트 사이드 TypeScript 컴파일 옵션을 정의합니다.
+ * 
+ * @description
+ * - React 애플리케이션 전용 TypeScript 설정
+ * - ES2020 타겟 및 모던 JavaScript 기능 지원
+ * - JSX 변환 및 React 컴포넌트 지원
+ * - 번들러 모드 및 경로 매핑 설정
+ * - 린팅 및 코드 품질 옵션
+ * 
+ * @features
+ * - ES2020 표준 지원
+ * - React JSX 자동 변환
+ * - 모듈 번들러 최적화
+ * - 경로 별칭 (@/*) 지원
+ * - 타입 체크 및 린팅 설정
+ * 
+ * @author AI Recipe Team
+ * @version 1.0.0
+ */
+{
+  "compilerOptions": {
+    /** JavaScript 타겟 버전 */
+    "target": "ES2020",
+    /** 클래스 필드 정의 방식 */
+    "useDefineForClassFields": true,
+    /** 사용할 라이브러리 */
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    /** 모듈 시스템 */
+    "module": "ESNext",
+    /** 라이브러리 타입 체크 건너뛰기 */
+    "skipLibCheck": true,
+    /** JavaScript 파일 허용 */
+    "allowJs": true,
+
+    // Bundler mode
+    /** 번들러 모드 모듈 해석 */
+    "moduleResolution": "bundler",
+    /** TypeScript 확장자 임포트 허용 */
+    "allowImportingTsExtensions": true,
+    /** 격리된 모듈 처리 */
+    "isolatedModules": true,
+    /** 모듈 감지 강제 */
+    "moduleDetection": "force",
+    /** 출력 파일 생성 안함 */
+    "noEmit": true,
+    /** JSX 변환 방식 */
+    "jsx": "react-jsx",
+
+    // Linting
+    /** 엄격한 타입 체크 */
+    "strict": false,
+    /** 사용하지 않는 지역 변수 체크 */
+    "noUnusedLocals": false,
+    /** 사용하지 않는 매개변수 체크 */
+    "noUnusedParameters": false,
+    /** switch 문 fallthrough 체크 */
+    "noFallthroughCasesInSwitch": true,
+    /** 암시적 반환 체크 */
+    "noImplicitReturns": true,
+    /** 암시적 override 체크 */
+    "noImplicitOverride": true,
+
+    // Path mapping
+    /** 기본 URL */
+    "baseUrl": ".",
+    /** 경로 별칭 매핑 */
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  /** 컴파일 대상 파일 */
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.d.ts"
+  ]
+}
