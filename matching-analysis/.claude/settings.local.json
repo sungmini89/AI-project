@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__taskmaster-ai__initialize_project",
+      "Bash(npm create vite@latest:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "mcp__magic-ui__getUIComponents",
+      "mcp__magic-ui__getSpecialEffects",
+      "mcp__magic-ui__getComponents",
+      "Bash(npx sharp-cli:*)",
+      "Bash(npx playwright test:*)",
+      "mcp__shadcn-ui__get_component"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "task-master-ai"
+  ]
+}

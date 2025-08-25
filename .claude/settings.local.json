@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init:*)",
+      "Bash(npm exec:*)",
+      "Bash(.node_modules.bintailwindcss init -p)",
+      "Bash(npm run build:*)",
+      "Bash(mkdir:*)",
+      "Bash(gh repo create:*)",
+      "mcp__github-alt__claude_code",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "outputStyle": "korean-concise"
+}
