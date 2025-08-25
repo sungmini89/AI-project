@@ -10,7 +10,6 @@ import { BorderBeam } from '@/components/ui/border-beam';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import AnimatedCircularProgressBar from '@/components/ui/animated-circular-progress-bar';
 import {
-  ArrowLeft,
   Brain,
   FileText,
   Search,
@@ -19,7 +18,6 @@ import {
   CheckCircle,
   Award,
   BarChart3,
-  Cpu,
   Eye,
   Filter,
   Layers,

@@ -9,7 +9,6 @@ import { MagicCard } from '@/components/ui/magic-card';
 import { BorderBeam } from '@/components/ui/border-beam';
 import { ShimmerButton } from '@/components/ui/shimmer-button';
 import {
-  ArrowLeft,
   Search,
   Filter,
   Code,
