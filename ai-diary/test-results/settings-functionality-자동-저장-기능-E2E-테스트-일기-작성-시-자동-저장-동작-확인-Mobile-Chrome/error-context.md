@@ -1,0 +1,71 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - button "메뉴 열기" [ref=e6] [cursor=pointer]:
+      - img [ref=e7] [cursor=pointer]
+    - heading "AI 일기" [level=1] [ref=e8]
+    - link [ref=e9] [cursor=pointer]:
+      - /url: /write
+      - img [ref=e10] [cursor=pointer]
+  - complementary [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - img [ref=e17]
+          - heading "AI 일기" [level=1] [ref=e19]
+        - button "메뉴 닫기" [ref=e20] [cursor=pointer]:
+          - img [ref=e21] [cursor=pointer]
+      - navigation [ref=e24]:
+        - link "홈" [ref=e25] [cursor=pointer]:
+          - /url: /
+          - img [ref=e26] [cursor=pointer]
+          - generic [ref=e29] [cursor=pointer]: 홈
+        - link "일기 작성" [ref=e30] [cursor=pointer]:
+          - /url: /write
+          - img [ref=e31] [cursor=pointer]
+          - generic [ref=e32] [cursor=pointer]: 일기 작성
+        - link "일기 목록" [ref=e33] [cursor=pointer]:
+          - /url: /diary
+          - img [ref=e34] [cursor=pointer]
+          - generic [ref=e36] [cursor=pointer]: 일기 목록
+        - link "감정 분석" [ref=e37] [cursor=pointer]:
+          - /url: /analytics
+          - img [ref=e38] [cursor=pointer]
+          - generic [ref=e40] [cursor=pointer]: 감정 분석
+        - link "설정" [ref=e41] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e42] [cursor=pointer]
+          - generic [ref=e45] [cursor=pointer]: 설정
+      - button "로그아웃" [ref=e47] [cursor=pointer]:
+        - img [ref=e48] [cursor=pointer]
+        - generic [ref=e51] [cursor=pointer]: 로그아웃
+  - main [ref=e52]:
+    - generic [ref=e56]:
+      - generic [ref=e57]:
+        - textbox "일기 제목을 입력하세요..." [ref=e58]: 자동 저장 테스트
+        - generic [ref=e60]:
+          - button "미리보기" [ref=e61] [cursor=pointer]:
+            - img [ref=e62] [cursor=pointer]
+            - generic [ref=e65] [cursor=pointer]: 미리보기
+          - button "감정 분석" [disabled] [ref=e66]:
+            - img [ref=e67]
+            - generic [ref=e69]: 감정 분석
+          - generic [ref=e70]:
+            - button "내보내기" [disabled] [ref=e71]:
+              - img [ref=e72]
+            - button "가져오기" [ref=e75] [cursor=pointer]:
+              - img [ref=e76] [cursor=pointer]
+            - button "초기화" [ref=e79] [cursor=pointer]:
+              - img [ref=e80] [cursor=pointer]
+      - textbox [active] [ref=e86]:
+        - paragraph [ref=e87]: 오늘 하루는 어땠나요? 자유롭게 작성해보세요...
+      - generic [ref=e89]:
+        - generic [ref=e91]: 0자
+        - generic [ref=e92]:
+          - button "취소" [ref=e93] [cursor=pointer]
+          - button "저장" [disabled] [ref=e94]:
+            - img [ref=e95]
+            - generic [ref=e99]: 저장
+```

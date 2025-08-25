@@ -26,7 +26,7 @@ import { RainbowButton } from "@/components/ui/rainbow-button";
 import { Meteors } from "@/components/ui/meteors";
 import { SparklesText } from "@/components/ui/sparkles-text";
 import { NumberTicker } from "@/components/ui/number-ticker";
-import { Badge } from "@/components/ui/badge";
+
 import {
   ArrowRight,
   FileText,
@@ -35,7 +35,6 @@ import {
   Zap,
   TrendingUp,
   Award,
-  Sparkles,
   Rocket,
   BookOpen,
   Search,
