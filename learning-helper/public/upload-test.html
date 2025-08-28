@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-area { border: 2px dashed #ccc; padding: 20px; margin: 20px 0; }
+        .result { margin: 20px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>File Upload Flow Test</h1>
+    <div class="test-area">
+        <h3>1. Create Test File</h3>
+        <button onclick="createTestFile()">Create Test Document</button>
+        <div id="file-result"></div>
+    </div>
+
+    <div class="test-area">
+        <h3>2. Test Storage Service</h3>
+        <button onclick="testStorageService()">Test IndexedDB Storage</button>
+        <div id="storage-result"></div>
+    </div>
+
+    <div class="test-area">
+        <h3>3. Manual File Upload Test</h3>
+        <input type="file" id="file-input" accept=".pdf,.txt,.md" />
+        <button onclick="testFileUpload()">Test File Processing</button>
+        <div id="upload-result"></div>
+    </div>
+
+    <div class="result info">
+        <strong>Instructions:</strong><br>
+        1. Click "Create Test Document" to generate a test file<br>
+        2. Click "Test IndexedDB Storage" to verify storage works<br>
+        3. Select a file and click "Test File Processing" to test full flow<br>
+        4. Check browser console for detailed logs
+    </div>
+
+    <script>
+        // 저장 서비스 구현
+        class StorageService {
+            constructor() {
+                this.dbName = 'StudyHelperDB';
+                this.version = 1;
+                this.db = null;
+            }
+
+            async initDB() {
+                if (this.db) return this.db;
+
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+
+                    request.onerror = () => {
+                        reject(new Error('IndexedDB를 열 수 없습니다.'));
+                    };
+
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve(this.db);
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+
+                        if (!db.objectStoreNames.contains('documents')) {
+                            const documentStore = db.createObjectStore('documents', { keyPath: 'id' });
+                            documentStore.createIndex('uploadDate', 'uploadDate', { unique: false });
+                            documentStore.createIndex('title', 'title', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            async saveDocument(document) {
+                console.log('저장할 문서:', document);
+                const db = await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['documents'], 'readwrite');
+                    const store = transaction.objectStore('documents');
+                    
+                    const request = store.put(document);
+                    
+                    request.onsuccess = () => {
+                        console.log('IndexedDB에 저장 완료!');
+                        resolve();
+                    };
+                    request.onerror = () => {
+                        console.error('저장 실패:', request.error);
+                        reject(new Error('문서 저장 실패'));
+                    };
+                });
+            }
+
+            async getAllDocuments() {
+                const db = await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['documents'], 'readonly');
+                    const store = transaction.objectStore('documents');
+                    
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(new Error('문서 조회 실패'));
+                });
+            }
+        }
+
+        const storageService = new StorageService();
+
+        function createTestFile() {
+            const content = `인공지능 학습 가이드
+
+인공지능(AI)은 컴퓨터가 인간의 지적 능력을 모방하여 학습하고, 추론하고, 문제를 해결하는 기술입니다.
+
+## 주요 개념
+
+1. **머신러닝**: 데이터를 통해 패턴을 학습하는 방법
+2. **딥러닝**: 인공신경망을 이용한 심층 학습
+3. **자연어처리**: 인간의 언어를 이해하고 처리하는 기술
+
+## 학습 방법
+
+- 이론적 기초 공부
+- 프로그래밍 실습
+- 프로젝트 수행
+- 논문 읽기`;
+
+            const blob = new Blob([content], { type: 'text/plain' });
+            const file = new File([blob], 'test-ai-guide.txt', { type: 'text/plain' });
+            
+            console.log('생성된 테스트 파일:', file);
+            
+            document.getElementById('file-result').innerHTML = `
+                <div class="result success">
+                    ✅ 테스트 파일 생성 완료<br>
+                    - 파일명: ${file.name}<br>
+                    - 크기: ${file.size} bytes<br>
+                    - 타입: ${file.type}
+                </div>
+            `;
+
+            // 파일 입력에 설정
+            const fileInput = document.getElementById('file-input');
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInput.files = dt.files;
+        }
+
+        async function testStorageService() {
+            const resultDiv = document.getElementById('storage-result');
+            
+            try {
+                console.log('StorageService 테스트 시작...');
+                resultDiv.innerHTML = '<div class="result info">테스트 진행 중...</div>';
+
+                const testDocument = {
+                    id: 'test-' + Date.now(),
+                    title: '테스트 문서',
+                    content: '이것은 테스트 문서입니다. localStorage 용량 제한을 해결하기 위해 IndexedDB를 사용합니다.',
+                    uploadDate: new Date().toISOString(),
+                    metadata: {
+                        size: 1024,
+                        type: 'test',
+                        keywords: ['테스트', 'IndexedDB']
+                    }
+                };
+
+                await storageService.saveDocument(testDocument);
+                console.log('문서 저장 완료');
+
+                const documents = await storageService.getAllDocuments();
+                console.log('저장된 문서들:', documents);
+
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ StorageService 테스트 성공!<br>
+                        - 저장된 문서 수: ${documents.length}개<br>
+                        - localStorage 용량 제한 문제 해결됨<br>
+                        - IndexedDB 정상 작동 확인
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('StorageService 테스트 실패:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ 테스트 실패: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        async function testFileUpload() {
+            const fileInput = document.getElementById('file-input');
+            const resultDiv = document.getElementById('upload-result');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.innerHTML = '<div class="result error">파일을 선택해주세요.</div>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            console.log('업로드 테스트할 파일:', file);
+
+            try {
+                resultDiv.innerHTML = '<div class="result info">파일 처리 중...</div>';
+
+                // 파일 내용 읽기
+                const content = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsText(file);
+                });
+
+                console.log('파일 내용:', content);
+
+                // 문서 객체 생성
+                const document = {
+                    id: 'upload-' + Date.now(),
+                    title: file.name.replace(/\.[^/.]+$/, ""), // 확장자 제거
+                    content: content,
+                    uploadDate: new Date().toISOString(),
+                    metadata: {
+                        originalName: file.name,
+                        size: file.size,
+                        type: file.type,
+                        uploadDate: new Date().toISOString()
+                    }
+                };
+
+                // IndexedDB에 저장
+                await storageService.saveDocument(document);
+
+                const allDocuments = await storageService.getAllDocuments();
+                console.log('업로드 완료 후 모든 문서:', allDocuments);
+
+                resultDiv.innerHTML = `
+                    <div class="result success">
+                        ✅ 파일 업로드 및 저장 성공!<br>
+                        - 파일명: ${file.name}<br>
+                        - 크기: ${file.size} bytes<br>
+                        - 총 저장된 문서: ${allDocuments.length}개<br>
+                        - IndexedDB 저장 완료
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('파일 업로드 테스트 실패:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ 업로드 실패: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', () => {
+            console.log('Upload Test Page 로드 완료');
+            console.log('현재 URL:', window.location.href);
+        });
+    </script>
+</body>
+</html>

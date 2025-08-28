@@ -1,0 +1,212 @@
+# AI Study Helper - 오프라인 우선 학습 도우미 웹 애플리케이션
+
+## 프로젝트 개요
+
+React + TypeScript + Tailwind CSS + Vite + shadcn/ui로 구현하는 AI 학습 도우미 웹사이트
+- **주요 기능**: 텍스트/PDF 업로드 → 자동 플래시카드 생성 → spaced-repetition 학습 → 퀴즈 시스템
+- **핵심 철학**: 오프라인 우선, 무료 API 제한 대응, 한국어 최적화
+- **배포**: Vercel PWA
+
+## 핵심 기능 명세
+
+### 1. 텍스트/PDF 학습 자료 업로드
+- **UI**: shadcn/ui 기반 드래그앤드롭 인터페이스
+- **지원 형식**: .txt, .pdf, 직접 텍스트 입력
+- **파일 처리**: PDF.js 통합, 텍스트 추출 및 정제
+- **제한사항**: 최대 10MB 파일, 100,000자 텍스트
+- **상태 관리**: 업로드 진행률, 에러 처리, 재시도 기능
+
+### 2. 오프라인 텍스트 처리
+- **요약**: node-summarizer 라이브러리 (완전 오프라인)
+- **키워드 추출**: keyword-extractor 라이브러리 (브라우저 기반)
+- **언어 지원**: 한국어 우선, 영어 지원
+- **성능**: 대용량 텍스트 청크 단위 처리, Web Workers 활용
+
+### 3. 플래시카드 자동 생성
+- **알고리즘**: 규칙 기반 Q&A 패턴 매칭
+- **한국어 패턴**: 정의형, 원인-결과형, 방법형, 특징형 질문
+- **품질 필터링**: 중복 제거, 난이도 분류, 학습 가치 평가
+- **UI**: shadcn/ui Card 컴포넌트, Magic UI 플립 애니메이션
+
+### 4. Google Gemini API 통합 (선택적)
+- **무료 티어**: 일 60 요청 제한
+- **할당량 추적**: localStorage 기반 사용량 모니터링
+- **폴백 전략**: 할당량 초과/API 실패 시 오프라인 모드 자동 전환
+- **에러 처리**: 재시도 로직, 사용자 친화적 메시지
+
+### 5. spaced-repetition 학습 시스템
+- **알고리즘**: SM-2 기반 복습 스케줄링
+- **성능 추적**: 쉬움/보통/어려움 평가에 따른 간격 조정
+- **학습 세션**: 일일 목표, 카드 큐 관리, 진도 시각화
+- **오프라인 지원**: IndexedDB 기반 완전 로컬 저장
+
+### 6. 퀴즈 생성 시스템
+- **문제 유형**: 객관식, 주관식, 참/거짓, 빈칸 채우기
+- **템플릿 기반**: 키워드 기반 선택지 생성, 한국어 자연어 패턴
+- **결과 분석**: 정답률, 약점 분야 식별, 개선 제안
+- **UI**: Magic UI 타이머, 실시간 피드백 애니메이션
+
+### 7. 학습 진도 추적 및 분석
+- **대시보드**: 일/주/월별 학습 패턴 시각화
+- **통계**: 마스터된 카드 수, 정답률, 학습 시간
+- **스트릭**: 연속 학습일, 목표 달성률
+- **차트**: Chart.js 또는 Magic UI 진도 애니메이션
+
+### 8. PWA 오프라인 모드 지원
+- **Service Worker**: 학습 자료 캐싱, 오프라인 폴백
+- **로컬 저장**: IndexedDB 대용량 데이터, localStorage 설정
+- **설치 가능**: PWA 매니페스트, 앱 스타일 UX
+- **동기화**: 온라인 복구 시 데이터 동기화
+
+## 기술 스택 명세
+
+### Frontend
+- **Vite**: React + TypeScript 개발 환경
+- **UI 라이브러리**: shadcn/ui (기본 컴포넌트) + Magic UI (학습 애니메이션)
+- **스타일링**: Tailwind CSS
+- **상태 관리**: React Context + useReducer
+- **라우팅**: React Router v6
+
+### 텍스트 처리 라이브러리
+- **node-summarizer**: 오프라인 텍스트 요약
+- **keyword-extractor**: 키워드 추출
+- **pdfjs-dist**: PDF 파일 파싱
+- **@google/generative-ai**: Gemini API 연동 (선택적)
+
+### 데이터 저장
+- **IndexedDB**: 학습 자료, 처리 결과, 플래시카드
+- **localStorage**: 사용자 설정, API 사용량, 세션 데이터
+- **Memory Cache**: 활성 학습 세션 데이터
+
+### PWA & 성능
+- **Service Worker**: 오프라인 캐싱
+- **Web Workers**: 대용량 텍스트 처리
+- **Code Splitting**: 지연 로딩
+- **Compression**: 텍스트 압축 저장
+
+## API 서비스 설계
+
+### AIServiceConfig 인터페이스
+```typescript
+interface AIServiceConfig {
+  mode: "mock" | "free" | "offline" | "custom";
+  apiKey?: string;
+  fallbackToOffline: boolean;
+}
+```
+
+### 환경변수 구성
+```bash
+# API Mode Configuration
+VITE_API_MODE=offline
+VITE_USE_MOCK_DATA=true
+
+# Google Gemini API (선택사항)
+VITE_GEMINI_API_KEY=your_gemini_key_here
+
+# PWA Configuration  
+VITE_ENABLE_PWA=true
+VITE_APP_NAME=AI Study Helper
+
+# 무료 할당량 관리
+VITE_GEMINI_DAILY_LIMIT=60
+VITE_OFFLINE_MODE_ENABLED=true
+```
+
+## 페이지 구성 및 사용자 경험
+
+### 1. 대시보드 (학습 현황 및 통계)
+- 오늘의 학습 목표 및 달성률
+- 복습 예정 플래시카드 수
+- 최근 퀴즈 성과 요약
+- 학습 연속일 표시
+- Magic UI 성취 애니메이션
+
+### 2. 자료 업로드 (파일 업로드 및 처리)
+- 드래그앤드롭 업로드 구역
+- 파일 형식 검증 및 크기 제한
+- 실시간 처리 진행률
+- 요약/키워드 추출 설정 옵션
+- 처리 결과 미리보기
+
+### 3. 플래시카드 학습 (spaced-repetition 시스템)
+- SM-2 알고리즘 기반 카드 큐
+- 카드 뒤집기 애니메이션
+- 난이도 평가 버튼 (쉬움/보통/어려움)
+- 학습 진도 시각화
+- 키보드 단축키 지원
+
+### 4. 퀴즈 페이지 (다양한 문제 유형)
+- 문제 유형 선택 (객관식/주관식/혼합)
+- Magic UI 타이머 애니메이션
+- 실시간 점수 표시
+- 정답/오답 즉시 피드백
+- 결과 분석 및 약점 영역 표시
+
+## Frontend Agent 태스크 명세
+
+### shadcn/ui 컴포넌트 요구사항
+- **Button, Input, Label**: 폼 상호작용
+- **Card, Badge**: 콘텐츠 조직
+- **Progress, Tabs**: 학습 진도 표시
+- **Dialog, Alert**: 알림 및 모달
+- **Upload Area**: 파일 업로드 인터페이스
+- **Timer Component**: 퀴즈 타이밍
+
+### Magic UI 애니메이션 요구사항
+- **StudyProgressRing**: 원형 진도 표시
+- **FlashcardFlip**: 부드러운 카드 뒤집기
+- **QuizFeedback**: 정답/오답 시각적 피드백
+- **StreakCounter**: 연속 학습일 표시
+- **LearningChart**: 지식 진도 시각화
+
+## 무료 API 제한사항 및 대응
+
+### Google Gemini API 무료 티어
+- **제한**: 일 60 요청
+- **추적**: localStorage 기반 사용량 카운터
+- **경고**: 50 요청 도달 시 경고 메시지
+- **폴백**: 할당량 초과 시 자동 오프라인 모드 전환
+
+### 오프라인 모드 폴백 전략
+- **완전 오프라인**: node-summarizer + keyword-extractor
+- **품질 저하 최소화**: 규칙 기반 알고리즘 최적화
+- **사용자 선택**: API/오프라인 모드 수동 전환 옵션
+- **투명성**: 현재 모드 및 제한사항 명확 표시
+
+## 한국어 최적화
+
+### 자연어 처리
+- 한국어 문장 분할 최적화
+- 조사/어미 제거 키워드 추출
+- 경어/반말 구분 질문 생성
+- 한국어 Q&A 패턴 매칭
+
+### 사용자 인터페이스
+- 모든 메시지 한국어 현지화
+- 한국어 타이포그래피 최적화
+- 교육 문화 반영 UX
+- 접근성 한국어 지원
+
+## 성능 목표
+
+- **초기 로딩**: < 3초 (3G 네트워크)
+- **플래시카드 생성**: < 5초 (10MB 문서)
+- **페이지 전환**: < 500ms
+- **오프라인 전환**: < 2초
+- **Lighthouse 점수**: Performance 90+, Accessibility 95+
+
+## 배포 및 운영
+
+### Vercel 배포
+- **Static Generation**: 빠른 로딩
+- **Edge Functions**: API 엔드포인트 (필요시)
+- **환경변수**: 프로덕션/개발 분리
+- **도메인**: ai-study-helper.vercel.app
+
+### 모니터링
+- **Core Web Vitals**: 성능 추적
+- **에러 로깅**: 사용자 이슈 모니터링
+- **사용량 분석**: 기능별 사용 패턴 (개인정보 보호 준수)
+
+이 PRD는 오프라인 우선 AI 학습 도우미 구현을 위한 완전한 기술 명세와 사용자 경험 가이드라인을 제공합니다.

@@ -1,0 +1,36 @@
+{
+  "name": "AI Study Helper",
+  "short_name": "StudyHelper",
+  "description": "AI 기반 학습 도우미 - 플래시카드와 간격 반복 학습",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ko",
+  "categories": ["education", "productivity"],
+  "icons": [],
+  "shortcuts": [
+    {
+      "name": "플래시카드 학습",
+      "short_name": "플래시카드",
+      "description": "바로 플래시카드 학습 시작",
+      "url": "/flashcards"
+    },
+    {
+      "name": "퀴즈",
+      "short_name": "퀴즈",
+      "description": "지식 테스트 퀴즈",
+      "url": "/quiz"
+    },
+    {
+      "name": "자료 업로드",
+      "short_name": "업로드",
+      "description": "새 학습 자료 업로드",
+      "url": "/upload"
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}

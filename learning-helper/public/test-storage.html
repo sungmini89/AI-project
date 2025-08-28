@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Storage Test</title>
+</head>
+<body>
+    <h1>IndexedDB Storage Test</h1>
+    <button onclick="testStorage()">Test Storage</button>
+    <div id="result"></div>
+
+    <script>
+        class StorageService {
+            constructor() {
+                this.dbName = 'StudyHelperDB';
+                this.version = 1;
+                this.db = null;
+            }
+
+            async initDB() {
+                if (this.db) return this.db;
+
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+
+                    request.onerror = () => {
+                        reject(new Error('IndexedDB를 열 수 없습니다.'));
+                    };
+
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        resolve(this.db);
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+
+                        if (!db.objectStoreNames.contains('documents')) {
+                            const documentStore = db.createObjectStore('documents', { keyPath: 'id' });
+                            documentStore.createIndex('uploadDate', 'uploadDate', { unique: false });
+                            documentStore.createIndex('title', 'title', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            async saveDocument(document) {
+                const db = await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['documents'], 'readwrite');
+                    const store = transaction.objectStore('documents');
+                    
+                    const request = store.put(document);
+                    
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(new Error('문서 저장 실패'));
+                });
+            }
+
+            async getAllDocuments() {
+                const db = await this.initDB();
+                return new Promise((resolve, reject) => {
+                    const transaction = db.transaction(['documents'], 'readonly');
+                    const store = transaction.objectStore('documents');
+                    
+                    const request = store.getAll();
+                    
+                    request.onsuccess = () => resolve(request.result || []);
+                    request.onerror = () => reject(new Error('문서 조회 실패'));
+                });
+            }
+        }
+
+        const storageService = new StorageService();
+
+        async function testStorage() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                console.log('IndexedDB 테스트 시작...');
+                resultDiv.innerHTML = 'Testing IndexedDB...';
+
+                // 큰 데이터 생성 (localStorage 한도를 초과하는 크기)
+                const largeContent = 'A'.repeat(10 * 1024 * 1024); // 10MB 데이터
+                
+                const testDocument = {
+                    id: 'test-' + Date.now(),
+                    title: '대용량 테스트 문서',
+                    content: largeContent,
+                    uploadDate: new Date(),
+                    metadata: {
+                        size: largeContent.length,
+                        type: 'test'
+                    }
+                };
+
+                console.log('문서 저장 중...', { size: testDocument.content.length });
+                await storageService.saveDocument(testDocument);
+                console.log('IndexedDB에 저장 완료!');
+
+                const documents = await storageService.getAllDocuments();
+                console.log('저장된 문서 조회:', documents.length + '개');
+
+                resultDiv.innerHTML = `
+                    <div style="color: green;">
+                        ✅ IndexedDB 테스트 성공!<br>
+                        - 문서 크기: ${(testDocument.content.length / 1024 / 1024).toFixed(2)}MB<br>
+                        - 저장된 문서 수: ${documents.length}개<br>
+                        - localStorage 한도 초과 문제 해결됨!
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('IndexedDB 테스트 실패:', error);
+                resultDiv.innerHTML = `<div style="color: red;">❌ 테스트 실패: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__sequential-thinking__sequentialthinking",
+      "mcp__filesystem__write_file"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "outputStyle": "korean-concise"
+}
