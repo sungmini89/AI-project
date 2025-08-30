@@ -60,24 +60,28 @@ npm install
 ```
 
 ### 3. 환경 변수 설정
-`.env` 파일을 생성하고 다음 내용을 추가:
+```bash
+# .env.example을 복사하여 .env 파일 생성
+cp .env.example .env
 
+# .env 파일을 열어서 Firebase 설정값을 입력하세요
+```
+
+**⚠️ 중요: .env 파일은 절대 Git에 커밋하지 마세요!**
+
+`.env` 파일 예시:
 ```env
-# Firebase Configuration
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-VITE_FIREBASE_APP_ID=your_app_id
+# Firebase Configuration (필수)
+VITE_FIREBASE_API_KEY=your_firebase_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-project-id
+VITE_FIREBASE_STORAGE_BUCKET=your-project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=123456789012
+VITE_FIREBASE_APP_ID=1:123456789012:web:abcdefghijk123456
 
 # Translation APIs (선택사항)
-VITE_LIBRETRANSLATE_URL=https://libretranslate.de/translate
-VITE_LIBRETRANSLATE_KEY=your_api_key_if_needed
-
-# PWA Configuration
-VITE_PWA_NAME=실시간 번역 채팅
-VITE_PWA_SHORT_NAME=번역채팅
+VITE_LIBRETRANSLATE_URL=https://libretranslate.de
+VITE_LIBRETRANSLATE_API_KEY=optional_key
 ```
 
 ### 4. Firebase 설정
