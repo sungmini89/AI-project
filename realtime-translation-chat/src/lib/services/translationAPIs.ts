@@ -1,78 +1,83 @@
-import type { TranslationResult, MyMemoryResponse, LibreTranslateResponse, APIQuota } from '@/types'
+import type {
+  TranslationResult,
+  MyMemoryResponse,
+  LibreTranslateResponse,
+  APIQuota,
+} from "@/types";
 
 // Quota management
 class QuotaManager {
-  private static instance: QuotaManager
-  private quotas: Map<string, APIQuota> = new Map()
+  private static instance: QuotaManager;
+  private quotas: Map<string, APIQuota> = new Map();
 
   static getInstance() {
     if (!QuotaManager.instance) {
-      QuotaManager.instance = new QuotaManager()
+      QuotaManager.instance = new QuotaManager();
     }
-    return QuotaManager.instance
+    return QuotaManager.instance;
   }
 
   private constructor() {
-    this.initializeQuotas()
+    this.initializeQuotas();
   }
 
   private initializeQuotas() {
-    const today = new Date().toDateString()
-    const stored = localStorage.getItem('translation-quotas')
-    
+    const today = new Date().toDateString();
+    const stored = localStorage.getItem("translation-quotas");
+
     if (stored) {
       try {
-        const data = JSON.parse(stored)
+        const data = JSON.parse(stored);
         if (data.date === today) {
-          this.quotas = new Map(data.quotas)
-          return
+          this.quotas = new Map(data.quotas);
+          return;
         }
       } catch (e) {
-        console.error('Error loading quotas:', e)
+        console.error("Error loading quotas:", e);
       }
     }
 
     // Initialize default quotas
-    this.quotas.set('mymemory', {
-      provider: 'mymemory',
+    this.quotas.set("mymemory", {
+      provider: "mymemory",
       dailyLimit: 1000, // MyMemory free tier
       currentUsage: 0,
-      lastReset: Date.now()
-    })
+      lastReset: Date.now(),
+    });
 
-    this.quotas.set('libretranslate', {
-      provider: 'libretranslate',
+    this.quotas.set("libretranslate", {
+      provider: "libretranslate",
       dailyLimit: 100, // Conservative estimate for free instances
       currentUsage: 0,
-      lastReset: Date.now()
-    })
+      lastReset: Date.now(),
+    });
 
-    this.saveQuotas()
+    this.saveQuotas();
   }
 
   private saveQuotas() {
     const data = {
       date: new Date().toDateString(),
-      quotas: Array.from(this.quotas.entries())
-    }
-    localStorage.setItem('translation-quotas', JSON.stringify(data))
+      quotas: Array.from(this.quotas.entries()),
+    };
+    localStorage.setItem("translation-quotas", JSON.stringify(data));
   }
 
   canUseProvider(provider: string): boolean {
-    const quota = this.quotas.get(provider)
-    return quota ? quota.currentUsage < quota.dailyLimit : false
+    const quota = this.quotas.get(provider);
+    return quota ? quota.currentUsage < quota.dailyLimit : false;
   }
 
   incrementUsage(provider: string) {
-    const quota = this.quotas.get(provider)
+    const quota = this.quotas.get(provider);
     if (quota) {
-      quota.currentUsage++
-      this.saveQuotas()
+      quota.currentUsage++;
+      this.saveQuotas();
     }
   }
 
   getQuota(provider: string): APIQuota | undefined {
-    return this.quotas.get(provider)
+    return this.quotas.get(provider);
   }
 }
 
@@ -84,59 +89,63 @@ export async function translateWithMyMemory(
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult> {
-  const quotaManager = QuotaManager.getInstance()
-  
-  if (!quotaManager.canUseProvider('mymemory')) {
-    throw new Error('MyMemory daily quota exceeded')
+  const quotaManager = QuotaManager.getInstance();
+
+  if (!quotaManager.canUseProvider("mymemory")) {
+    throw new Error("MyMemory daily quota exceeded");
   }
 
-  const apiUrl = 'https://api.mymemory.translated.net/get'
+  const apiUrl = "https://api.mymemory.translated.net/get";
   const params = new URLSearchParams({
     q: text,
     langpair: `${sourceLang}|${targetLang}`,
-    de: 'your-email@domain.com' // Replace with actual email for better quota
-  })
+    de: "your-email@domain.com", // Replace with actual email for better quota
+  });
 
   try {
     const response = await fetch(`${apiUrl}?${params}`, {
-      method: 'GET',
+      method: "GET",
       headers: {
-        'Accept': 'application/json',
-      }
-    })
+        Accept: "application/json",
+      },
+    });
 
     if (!response.ok) {
-      throw new Error(`MyMemory API error: ${response.status}`)
+      throw new Error(`MyMemory API error: ${response.status}`);
     }
 
-    const data: MyMemoryResponse = await response.json()
-    
+    const data: MyMemoryResponse = await response.json();
+
     if (data.responseStatus !== 200) {
-      throw new Error(`MyMemory translation failed: ${data.responseDetails}`)
+      throw new Error(`MyMemory translation failed: ${data.responseDetails}`);
     }
 
-    quotaManager.incrementUsage('mymemory')
+    quotaManager.incrementUsage("mymemory");
 
-    const translatedText = data.responseData.translatedText
-    const confidence = data.responseData.match / 100
+    const translatedText = data.responseData.translatedText;
+    const confidence = data.responseData.match / 100;
 
     // Simple quality check for obvious wrong translations
-    const isLowQuality = (
+    const isLowQuality =
       confidence < 0.3 || // Very low confidence
-      translatedText.toLowerCase().includes('my name is') || // Common wrong translation pattern
-      translatedText.toLowerCase().includes('제 이름은') || // Korean version of wrong pattern  
-      translatedText.toLowerCase().includes('i am') ||
-      translatedText.toLowerCase().includes('저는') ||
-      (text.toLowerCase() === 'hello' && !translatedText.toLowerCase().includes('안녕') && targetLang === 'ko') // Specific hello check
-    )
+      translatedText.toLowerCase().includes("my name is") || // Common wrong translation pattern
+      translatedText.toLowerCase().includes("제 이름은") || // Korean version of wrong pattern
+      translatedText.toLowerCase().includes("i am") ||
+      translatedText.toLowerCase().includes("저는") ||
+      (text.toLowerCase() === "hello" &&
+        !translatedText.toLowerCase().includes("안녕") &&
+        targetLang === "ko"); // Specific hello check
 
     if (isLowQuality) {
-      console.warn('⚠️ Low quality translation detected, falling back to LibreTranslate:', {
-        original: text,
-        translation: translatedText,
-        confidence
-      })
-      throw new Error('Low quality translation, trying fallback')
+      console.warn(
+        "⚠️ Low quality translation detected, falling back to LibreTranslate:",
+        {
+          original: text,
+          translation: translatedText,
+          confidence,
+        }
+      );
+      throw new Error("Low quality translation, trying fallback");
     }
 
     return {
@@ -144,11 +153,11 @@ export async function translateWithMyMemory(
       sourceLanguage: sourceLang,
       targetLanguage: targetLang,
       confidence,
-      provider: 'mymemory'
-    }
+      provider: "mymemory",
+    };
   } catch (error) {
-    console.error('MyMemory translation error:', error)
-    throw error
+    console.error("MyMemory translation error:", error);
+    throw error;
   }
 }
 
@@ -160,72 +169,72 @@ export async function translateWithLibreTranslate(
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult> {
-  const quotaManager = QuotaManager.getInstance()
-  
-  if (!quotaManager.canUseProvider('libretranslate')) {
-    throw new Error('LibreTranslate daily quota exceeded')
+  const quotaManager = QuotaManager.getInstance();
+
+  if (!quotaManager.canUseProvider("libretranslate")) {
+    throw new Error("LibreTranslate daily quota exceeded");
   }
 
   // Try multiple LibreTranslate instances with CORS support
   const fallbackUrls = [
-    'https://libretranslate.pussthecat.org/translate',
-    'https://translate.argosopentech.com/translate',
-    'https://libretranslate.com/translate',
-    'https://libretranslate.de/translate'
-  ]
-  
-  const primaryUrl = import.meta.env.VITE_LIBRETRANSLATE_URL
-  const apiKey = import.meta.env.VITE_LIBRETRANSLATE_KEY
-  
+    "https://libretranslate.pussthecat.org/translate",
+    "https://translate.argosopentech.com/translate",
+    "https://libretranslate.com/translate",
+    "https://libretranslate.de/translate",
+  ];
+
+  const primaryUrl = import.meta.env.VITE_LIBRETRANSLATE_URL;
+  const apiKey = import.meta.env.VITE_LIBRETRANSLATE_KEY;
+
   // Create list of URLs to try (custom URL first if provided, then fallbacks)
-  const urlsToTry = primaryUrl ? [primaryUrl, ...fallbackUrls] : fallbackUrls
-  
-  let lastError: Error
+  const urlsToTry = primaryUrl ? [primaryUrl, ...fallbackUrls] : fallbackUrls;
+
+  let lastError: Error = new Error("All LibreTranslate instances failed");
 
   for (const apiUrl of urlsToTry) {
     try {
-      console.log(`🌍 Trying LibreTranslate instance: ${apiUrl}`)
-      
+      console.log(`🌍 Trying LibreTranslate instance: ${apiUrl}`);
+
       const response = await fetch(apiUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          ...(apiKey && { 'Authorization': `Bearer ${apiKey}` })
+          "Content-Type": "application/json",
+          ...(apiKey && { Authorization: `Bearer ${apiKey}` }),
         },
         body: JSON.stringify({
           q: text,
           source: sourceLang,
           target: targetLang,
-          format: 'text'
-        })
-      })
+          format: "text",
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error(`LibreTranslate API error: ${response.status}`)
+        throw new Error(`LibreTranslate API error: ${response.status}`);
       }
 
-      const data: LibreTranslateResponse = await response.json()
-      
-      quotaManager.incrementUsage('libretranslate')
-      
-      console.log(`✅ LibreTranslate translation successful from: ${apiUrl}`)
+      const data: LibreTranslateResponse = await response.json();
+
+      quotaManager.incrementUsage("libretranslate");
+
+      console.log(`✅ LibreTranslate translation successful from: ${apiUrl}`);
 
       return {
         translatedText: data.translatedText,
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
-        provider: 'libretranslate'
-      }
+        provider: "libretranslate",
+      };
     } catch (error) {
-      lastError = error as Error
-      console.warn(`❌ LibreTranslate instance failed (${apiUrl}):`, error)
-      continue
+      lastError = error as Error;
+      console.warn(`❌ LibreTranslate instance failed (${apiUrl}):`, error);
+      continue;
     }
   }
 
   // If all instances failed, throw the last error
-  console.error('All LibreTranslate instances failed:', lastError)
-  throw lastError
+  console.error("All LibreTranslate instances failed:", lastError);
+  throw lastError;
 }
 
 /**
@@ -233,8 +242,8 @@ export async function translateWithLibreTranslate(
  */
 const OFFLINE_DICTIONARY: Record<string, Record<string, string>> = {
   // Korean common phrases
-  'ko': {
-    'en': `안녕하세요 - Hello
+  ko: {
+    en: `안녕하세요 - Hello
 안녕 - Hi
 좋은 아침 - Good morning
 좋은 오후 - Good afternoon
@@ -301,7 +310,7 @@ const OFFLINE_DICTIONARY: Record<string, Record<string, string>> = {
 피곤해요 - Tired
 배고파요 - Hungry
 목말라요 - Thirsty`,
-    'ja': `안녕하세요 - こんにちは
+    ja: `안녕하세요 - こんにちは
 안녕 - こんにちは
 좋은 아침 - おはようございます
 좋은 오후 - こんにちは
@@ -368,7 +377,7 @@ const OFFLINE_DICTIONARY: Record<string, Record<string, string>> = {
 피곤해요 - 疲れた
 배고파요 - お腹が空いた
 목말라요 - のどが渇いた`,
-    'zh': `안녕하세요 - 你好
+    zh: `안녕하세요 - 你好
 안녕 - 你好
 좋은 아침 - 早上好
 좋은 오후 - 下午好
@@ -434,11 +443,11 @@ const OFFLINE_DICTIONARY: Record<string, Record<string, string>> = {
 화나요 - 生气
 피곤해요 - 累
 배고파요 - 饿
-목말라요 - 渴`
+목말라요 - 渴`,
   },
-  // English common phrases  
-  'en': {
-    'ko': `Hello - 안녕하세요
+  // English common phrases
+  en: {
+    ko: `Hello - 안녕하세요
 Hi - 안녕
 Good morning - 좋은 아침
 Good afternoon - 좋은 오후
@@ -503,7 +512,7 @@ Angry - 화나요
 Tired - 피곤해요
 Hungry - 배고파요
 Thirsty - 목말라요`,
-    'ja': `Hello - こんにちは
+    ja: `Hello - こんにちは
 Hi - こんにちは  
 Good morning - おはようございます
 Good afternoon - こんにちは
@@ -568,7 +577,7 @@ Angry - 怒っている
 Tired - 疲れた
 Hungry - お腹が空いた
 Thirsty - のどが渇いた`,
-    'zh': `Hello - 你好
+    zh: `Hello - 你好
 Hi - 你好
 Good morning - 早上好
 Good afternoon - 下午好
@@ -632,11 +641,11 @@ Sad - 难过
 Angry - 生气
 Tired - 累
 Hungry - 饿
-Thirsty - 渴`
+Thirsty - 渴`,
   },
   // Japanese common phrases
-  'ja': {
-    'ko': `おはよう - 안녕하세요
+  ja: {
+    ko: `おはよう - 안녕하세요
 おはようございます - 안녕하세요
 こんにちは - 안녕하세요
 こんばんは - 안녕하세요
@@ -652,7 +661,7 @@ Thirsty - 渴`
 愛しています - 사랑해요
 元気 - 건강해요
 大丈夫 - 괜찮아요`,
-    'en': `おはよう - Good morning
+    en: `おはよう - Good morning
 おはようございます - Good morning
 こんにちは - Hello
 こんばんは - Good evening
@@ -669,7 +678,7 @@ Thirsty - 渴`
 悪い - Bad
 元気 - Fine
 大丈夫 - Okay`,
-    'zh': `おはよう - 早上好
+    zh: `おはよう - 早上好
 おはようございます - 早上好
 こんにちは - 你好
 こんばんは - 晚上好
@@ -679,11 +688,11 @@ Thirsty - 渴`
 ごめんなさい - 对不起
 はい - 是的
 いいえ - 不是
-さようなら - 再见`
+さようなら - 再见`,
   },
   // Chinese common phrases
-  'zh': {
-    'ko': `你好 - 안녕하세요
+  zh: {
+    ko: `你好 - 안녕하세요
 您好 - 안녕하세요
 早上好 - 좋은 아침
 下午好 - 좋은 오후
@@ -748,7 +757,7 @@ Thirsty - 渴`
 累 - 피곤해요
 饿 - 배고파요
 渴 - 목말라요`,
-    'en': `你好 - Hello
+    en: `你好 - Hello
 您好 - Hello
 早上好 - Good morning
 下午好 - Good afternoon
@@ -813,7 +822,7 @@ Thirsty - 渴`
 累 - Tired
 饿 - Hungry
 渴 - Thirsty`,
-    'ja': `你好 - こんにちは
+    ja: `你好 - こんにちは
 您好 - こんにちは
 早上好 - おはようございます
 下午好 - こんにちは
@@ -877,35 +886,37 @@ Thirsty - 渴`
 生气 - 怒っている
 累 - 疲れた
 饿 - お腹が空いた
-渴 - のどが渇いた`
-  }
-}
+渴 - のどが渇いた`,
+  },
+};
 
 export async function translateWithOfflineDictionary(
   text: string,
   sourceLang: string,
   targetLang: string
 ): Promise<TranslationResult> {
-  const dictionary = OFFLINE_DICTIONARY[sourceLang]?.[targetLang]
-  
+  const dictionary = OFFLINE_DICTIONARY[sourceLang]?.[targetLang];
+
   if (!dictionary) {
-    throw new Error(`Offline translation not available for ${sourceLang} to ${targetLang}`)
+    throw new Error(
+      `Offline translation not available for ${sourceLang} to ${targetLang}`
+    );
   }
 
   // Simple keyword matching for offline translation
-  const lowerText = text.toLowerCase()
-  const entries = dictionary.split('\n')
-  
+  const lowerText = text.toLowerCase();
+  const entries = dictionary.split("\n");
+
   for (const entry of entries) {
-    const [source, target] = entry.split(' - ')
+    const [source, target] = entry.split(" - ");
     if (source && target && lowerText.includes(source.toLowerCase())) {
       return {
         translatedText: target,
         sourceLanguage: sourceLang,
         targetLanguage: targetLang,
         confidence: 0.6,
-        provider: 'offline'
-      }
+        provider: "offline",
+      };
     }
   }
 
@@ -915,6 +926,6 @@ export async function translateWithOfflineDictionary(
     sourceLanguage: sourceLang,
     targetLanguage: targetLang,
     confidence: 0.1,
-    provider: 'offline'
-  }
+    provider: "offline",
+  };
 }

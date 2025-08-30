@@ -247,7 +247,7 @@ export class TranslationEngine {
           detectedSource || "auto",
           targetLanguage
         );
-        if (cached && cached.confidence > 0.5) {
+        if (cached && cached.confidence && cached.confidence > 0.5) {
           // Only use high-confidence cached results
           console.log("Translation cache hit");
           return cached;
