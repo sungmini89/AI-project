@@ -77,9 +77,6 @@
   * {
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
-    /* GPU 가속 최적화 */
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
   }
   
   /* 스켈레톤 로딩 스타일 */
@@ -129,7 +126,7 @@
   }
   
   /* 부드러운 애니메이션 */
-  * {
+  .smooth-transition {
     transition: all 0.2s ease-in-out;
   }
   
