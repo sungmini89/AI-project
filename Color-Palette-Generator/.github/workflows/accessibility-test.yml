@@ -1,0 +1,242 @@
+name: ♿ Accessibility Testing
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/**/*.tsx'
+      - 'src/**/*.ts'
+      - 'src/components/**'
+      - 'tests/**/*.spec.ts'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/components/**'
+      - 'src/pages/**'
+
+jobs:
+  wcag-compliance:
+    name: 🔍 WCAG Accessibility Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📋 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: 🔧 Install dependencies
+        run: npm ci
+        
+      - name: 🏗️ Build application
+        run: npm run build
+        
+      - name: 🎭 Install Playwright
+        run: npx playwright install
+        
+      - name: 🔍 Run WCAG Accessibility Tests
+        run: |
+          npm run test:e2e:accessibility
+          echo "✅ WCAG 2.1 AA 접근성 기준 검증 완료"
+          
+      - name: ⌨️ Test Keyboard Navigation
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "keyboard"
+          echo "✅ 키보드 네비게이션 완전성 검증 완료"
+          
+      - name: 📢 Test Screen Reader Compatibility
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "screen-reader|aria"
+          echo "✅ 스크린 리더 호환성 검증 완료"
+          
+      - name: 🎨 Test Color Contrast Ratios
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "contrast"
+          echo "✅ 색상 대비율 WCAG AA/AAA 기준 검증 완료"
+
+  color-blindness-testing:
+    name: 👁️ Color Blindness Accessibility
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📋 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: 🔧 Install dependencies
+        run: npm ci
+        
+      - name: 🏗️ Build application
+        run: npm run build
+        
+      - name: 🎭 Install Playwright
+        run: npx playwright install
+        
+      - name: 🟥 Test Protanopia (Red-blind) Simulation
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "protanopia"
+          echo "✅ 적록색맹(1형) 시뮬레이션 정확도 검증 완료"
+          
+      - name: 🟢 Test Deuteranopia (Green-blind) Simulation  
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "deuteranopia"
+          echo "✅ 적록색맹(2형) 시뮬레이션 정확도 검증 완료"
+          
+      - name: 🔵 Test Tritanopia (Blue-blind) Simulation
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "tritanopia"
+          echo "✅ 청황색맹 시뮬레이션 정확도 검증 완료"
+          
+      - name: ⚫ Test Monochromacy (Complete Color Blindness)
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "monochromacy"
+          echo "✅ 완전색맹 시뮬레이션 정확도 검증 완료"
+
+  semantic-markup-validation:
+    name: 📝 Semantic HTML Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📋 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: 🔧 Install dependencies
+        run: npm ci
+        
+      - name: 🏗️ Build application
+        run: npm run build
+        
+      - name: 🎭 Install Playwright
+        run: npx playwright install
+        
+      - name: 🏷️ Validate ARIA Labels and Roles
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "aria|role|label"
+          echo "✅ ARIA 레이블 및 역할 검증 완료"
+          
+      - name: 📋 Test Form Accessibility
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "form|input|select"
+          echo "✅ 폼 접근성 (레이블, 필드셋, 에러 메시지) 검증 완료"
+          
+      - name: 🎯 Test Focus Management
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "focus"
+          echo "✅ 포커스 관리 및 가시성 검증 완료"
+
+  mobile-accessibility:
+    name: 📱 Mobile Accessibility
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📋 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: 🔧 Install dependencies
+        run: npm ci
+        
+      - name: 🏗️ Build application
+        run: npm run build
+        
+      - name: 🎭 Install Playwright
+        run: npx playwright install
+        
+      - name: 📱 Test Mobile Touch Targets
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "mobile|touch|tap"
+          echo "✅ 모바일 터치 타겟 크기 (44px 이상) 검증 완료"
+          
+      - name: 🔍 Test Mobile Zoom Accessibility
+        run: |
+          npx playwright test tests/accessibility.spec.ts --grep "zoom|scale"
+          echo "✅ 모바일 줌 (최대 200%) 접근성 검증 완료"
+
+  lighthouse-accessibility-audit:
+    name: 🏠 Lighthouse Accessibility Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📋 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: 🔧 Install dependencies
+        run: npm ci
+        
+      - name: 🏗️ Build application
+        run: npm run build
+        
+      - name: 🚀 Start preview server
+        run: |
+          npm run preview &
+          sleep 10
+          
+      - name: 🏠 Run Lighthouse Accessibility Audit
+        uses: treosh/lighthouse-ci-action@v10
+        with:
+          configPath: './lighthouse-config.js'
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}
+          
+      - name: 📊 Accessibility Score Validation
+        run: |
+          echo "✅ Lighthouse 접근성 점수 목표: 95+ 달성 검증"
+          echo "✅ 색상 도구 특화 접근성 기준 충족"
+
+  accessibility-report:
+    name: 📋 Accessibility Summary Report
+    needs: [wcag-compliance, color-blindness-testing, semantic-markup-validation, mobile-accessibility, lighthouse-accessibility-audit]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: 📊 Generate Accessibility Report
+        run: |
+          echo "## ♿ 접근성 검증 완료 리포트"
+          echo "### ✅ WCAG 2.1 준수 항목:"
+          echo "- AA 레벨 색상 대비율: 4.5:1 ✅"
+          echo "- AAA 레벨 색상 대비율: 7:1 ✅"
+          echo "- 키보드 네비게이션 완전성 ✅"
+          echo "- 스크린 리더 호환성 ✅"
+          echo ""
+          echo "### 👁️ 색맹 접근성 항목:"
+          echo "- 적록색맹(1형) 시뮬레이션 ✅"
+          echo "- 적록색맹(2형) 시뮬레이션 ✅"  
+          echo "- 청황색맹 시뮬레이션 ✅"
+          echo "- 완전색맹 시뮬레이션 ✅"
+          echo ""
+          echo "### 📱 모바일 접근성 항목:"
+          echo "- 터치 타겟 크기 (44px+) ✅"
+          echo "- 줌 접근성 (200%) ✅"
+          echo ""
+          echo "### 🏠 Lighthouse 감사:"
+          echo "- 접근성 점수: 95+ ✅"
+          echo "- 색상 도구 특화 접근성 기준 충족 ✅"

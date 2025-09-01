@@ -1,0 +1,143 @@
+name: 🇰🇷 한국어 키워드 매핑 요청
+description: 새로운 한국어 키워드의 색상 매핑 추가 또는 기존 매핑 개선 요청
+title: "[KEYWORD] "
+labels: ["keyword-mapping", "korean", "enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🇰🇷 한국어 키워드 매핑 요청
+        새로운 한국어 키워드를 색상에 매핑하거나 기존 매핑을 개선하는 제안을 해주세요.
+
+  - type: dropdown
+    id: request-type
+    attributes:
+      label: 요청 유형
+      description: 어떤 종류의 키워드 매핑 요청인지 선택하세요
+      options:
+        - 새 키워드 추가
+        - 기존 키워드 색상 개선
+        - 키워드 카테고리 추가
+        - 계절/문화적 키워드 확장
+        - 감정 표현 키워드 추가
+        - 브랜드/비즈니스 키워드 추가
+    validations:
+      required: true
+
+  - type: input
+    id: keyword
+    attributes:
+      label: 키워드
+      description: 추가하거나 수정하고 싶은 한국어 키워드
+      placeholder: 예) 벚꽃, 단풍, 새벽, 황혼, 희망, 신뢰
+    validations:
+      required: true
+
+  - type: dropdown
+    id: keyword-category
+    attributes:
+      label: 키워드 카테고리
+      description: 이 키워드가 속하는 카테고리를 선택하세요
+      options:
+        - 감정/기분 (평온함, 열정, 행복, 슬픔)
+        - 자연/환경 (숲, 바다, 하늘, 산)
+        - 계절/시간 (봄, 여름, 가을, 겨울, 새벽, 황혼)
+        - 문화/전통 (한복, 전통색, 궁궐, 차례)
+        - 추상/개념 (에너지, 미니멀, 럭셔리, 모던)
+        - 브랜드/비즈니스 (신뢰, 혁신, 안정, 성장)
+        - 기타
+    validations:
+      required: true
+
+  - type: textarea
+    id: color-suggestion
+    attributes:
+      label: 제안 색상
+      description: 이 키워드에 적합하다고 생각하는 색상을 HSL 또는 HEX 형식으로 제안해주세요
+      placeholder: |
+        예) "벚꽃" 키워드:
+        - 주 색상: #FFB6C1 (연한 핑크)
+        - HSL: h: 351, s: 100%, l: 86%
+        - 보조 색상: #FFC0CB (더 연한 핑크)
+        - 강조 색상: #FF69B4 (진한 핑크)
+    validations:
+      required: true
+
+  - type: textarea
+    id: cultural-context
+    attributes:
+      label: 문화적 맥락
+      description: 이 키워드가 한국 문화에서 갖는 의미나 연상되는 색상에 대해 설명해주세요
+      placeholder: |
+        예) "벚꽃":
+        - 한국의 봄을 대표하는 꽃
+        - 연분홍 계열이 일반적인 연상 색상
+        - 순수함, 아름다움, 짧은 생명의 소중함을 상징
+        - 여의도, 진해 등 벚꽃 명소의 이미지
+
+  - type: textarea
+    id: harmony-considerations
+    attributes:
+      label: 조화 규칙 고려사항
+      description: 이 키워드가 5가지 조화 규칙과 어떻게 조합될지 고려사항을 설명해주세요
+      placeholder: |
+        예) "벚꽃" 키워드의 조화 규칙별 적용:
+        - 보색: 핑크 + 민트 그린 조합으로 봄의 신선함
+        - 유사색: 핑크 + 라벤더 + 피치 조합으로 부드러운 파스텔
+        - 단색조: 다양한 핑크 톤으로 우아한 그라데이션
+
+  - type: dropdown
+    id: season-time
+    attributes:
+      label: 계절/시간대 연관성
+      description: 이 키워드와 연관된 계절이나 시간대가 있다면 선택하세요
+      options:
+        - 봄
+        - 여름  
+        - 가을
+        - 겨울
+        - 새벽
+        - 아침
+        - 정오
+        - 저녁
+        - 밤
+        - 계절/시간 무관
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: similar-keywords
+    attributes:
+      label: 유사 키워드
+      description: 이 키워드와 유사한 의미를 가진 기존 키워드들을 선택하세요
+      options:
+        - label: 평온함 (기존)
+        - label: 자연 (기존)
+        - label: 행복 (기존)
+        - label: 하늘 (기존)
+        - label: 바다 (기존)
+        - label: 숲 (기존)
+        - label: 봄 (기존)
+        - label: 에너지 (기존)
+        - label: 유사 키워드 없음
+
+  - type: textarea
+    id: usage-examples
+    attributes:
+      label: 사용 예시
+      description: 이 키워드가 실제로 어떤 상황에서 사용될지 예시를 들어주세요
+      placeholder: |
+        예) "벚꽃" 키워드 사용 상황:
+        - 웨딩 웹사이트 색상 테마
+        - 봄 시즌 이벤트 페이지
+        - 화장품 브랜드 파스텔 컬러
+        - 카페 인테리어 색상 기획
+        - 여성향 앱/서비스 브랜딩
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 추가 정보
+      description: 참고할 이미지, 색상 샘플, 관련 자료 등이 있다면 첨부해주세요

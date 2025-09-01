@@ -1,0 +1,91 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+  
+[build.environment]
+  NODE_VERSION = "18"
+  VITE_APP_ENV = "production"
+
+# PWA 지원을 위한 헤더 설정
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://colormind.io https://www.thecolorapi.com"
+
+# Service Worker 헤더
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+# PWA 매니페스트 헤더
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+    Cache-Control = "public, max-age=86400"
+
+# 정적 자원 캐싱
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/icons/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# SPA 라우팅 지원
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"], Country = ["US"]}
+
+# API 프록시 (필요한 경우)
+[[redirects]]
+  from = "/api/*"
+  to = "https://api.aicolorpalette.com/:splat"
+  status = 200
+  force = true
+
+# 브랜치 배포 설정
+[context.production]
+  environment = { VITE_APP_ENV = "production" }
+  
+[context.deploy-preview]
+  environment = { VITE_APP_ENV = "preview" }
+  
+[context.branch-deploy]
+  environment = { VITE_APP_ENV = "development" }
+
+# 폼 처리 (연락처 양식 등)
+[build.processing]
+  skip_processing = false
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+[build.processing.html]
+  pretty_urls = true
+
+# Functions (서버리스 함수)
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# 에지 함수 (필요한 경우)
+[[edge_functions]]
+  function = "color-api-proxy"
+  path = "/api/colors/*"

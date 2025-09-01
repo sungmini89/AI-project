@@ -1,0 +1,121 @@
+name: ➕ 새 색상 조화 규칙 추가
+description: 5가지 기본 조화 규칙 외 새로운 색상 조화 규칙 추가 요청
+title: "[HARMONY] "
+labels: ["harmony-rule", "color-theory", "enhancement"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ➕ 새 색상 조화 규칙 추가 요청
+        현재 지원하는 5가지 조화 규칙(보색, 유사색, 삼색, 사색, 단색) 외에 새로운 조화 규칙을 제안해주세요.
+
+  - type: input
+    id: harmony-name
+    attributes:
+      label: 조화 규칙 이름
+      description: 새로운 조화 규칙의 한국어/영어 이름
+      placeholder: 예) 분할 보색 (Split Complementary)
+    validations:
+      required: true
+
+  - type: textarea
+    id: harmony-description
+    attributes:
+      label: 조화 규칙 설명
+      description: 이 조화 규칙의 색상 이론적 정의와 특징을 설명해주세요
+      placeholder: |
+        예) 분할 보색 조화는 기본 색상의 보색 양쪽에 인접한 두 색상을 사용하는 방식입니다.
+        - 기본색: 0도
+        - 보색 인접색 1: 150도  
+        - 보색 인접색 2: 210도
+    validations:
+      required: true
+
+  - type: textarea
+    id: mathematical-formula
+    attributes:
+      label: 수학적 공식
+      description: HSL 색공간에서 이 조화 규칙을 구현할 수학적 공식을 제공해주세요
+      placeholder: |
+        예) Split Complementary:
+        - baseHue: 기본 색상 각도
+        - color1: (baseHue + 150) % 360
+        - color2: (baseHue + 210) % 360
+        - variations: 채도/명도 변화로 5-6개 팔레트 구성
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: 활용 사례
+      description: 이 조화 규칙이 효과적으로 사용될 수 있는 디자인 상황들을 설명해주세요
+      placeholder: |
+        예)
+        - 웹사이트 메인 컬러와 액센트 컬러 조합
+        - 브랜딩에서 안정감 있으면서도 다채로운 색상 조합
+        - 인포그래픽에서 차별화된 데이터 시각화
+    validations:
+      required: true
+
+  - type: textarea
+    id: color-examples
+    attributes:
+      label: 색상 예시
+      description: 이 조화 규칙의 실제 색상 예시를 HEX 코드로 제공해주세요
+      placeholder: |
+        예) 빨간색(0도) 기준 분할 보색:
+        - 기본색: #FF0000 (빨강, 0도)
+        - 조화색 1: #00FF80 (청록, 150도)  
+        - 조화색 2: #0080FF (파랑, 210도)
+        - 중간톤 1: #FF8080 (연한 빨강)
+        - 중간톤 2: #80FF80 (연한 초록)
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: 구현 복잡도
+      description: 이 조화 규칙의 구현 난이도를 평가해주세요
+      options:
+        - 낮음 (단순 각도 계산)
+        - 보통 (조건부 로직 필요)
+        - 높음 (복잡한 알고리즘 필요)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: design-principles
+    attributes:
+      label: 디자인 원칙
+      description: 이 조화 규칙이 준수하는 디자인 원칙들을 선택하세요
+      options:
+        - label: 색상 대비 (높은 가독성)
+        - label: 시각적 균형 (안정감)
+        - label: 색상 조화 (자연스러움)
+        - label: 감정 표현 (특정 분위기)
+        - label: 브랜드 적용 가능성
+        - label: 접근성 친화적
+
+  - type: textarea
+    id: accessibility-considerations
+    attributes:
+      label: 접근성 고려사항
+      description: 이 조화 규칙에서 WCAG 접근성을 위해 고려해야 할 사항들
+      placeholder: |
+        예)
+        - 대비율 4.5:1 이상 보장 방법
+        - 색맹 사용자를 위한 색상 선택 가이드
+        - 텍스트와 배경색 조합 시 주의사항
+
+  - type: textarea
+    id: reference-sources
+    attributes:
+      label: 참고 자료
+      description: 이 조화 규칙에 대한 참고 문헌이나 자료가 있다면 공유해주세요
+      placeholder: |
+        예)
+        - Adobe Color 이론 가이드
+        - Johannes Itten의 색채학 연구
+        - 한국 전통 색채 조합 연구
