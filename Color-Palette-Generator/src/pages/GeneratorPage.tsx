@@ -29,13 +29,18 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Toast } from '../components/ui/toast';
 import { 
   Palette, 
   Sparkles, 
   Image, 
   Settings,
   Info,
-  Zap
+  Zap,
+  Save,
+  WifiOff
 } from 'lucide-react';
 
 import { PaletteGenerator, HarmonySelector } from '../components/color';
@@ -65,6 +70,9 @@ const GeneratorPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [showAccessibilityDetails] = useState<boolean>(true);
   const [serviceStatus, setServiceStatus] = useState<any>(null);
+  const [paletteName, setPaletteName] = useState<string>('');
+  const [showSaveToast, setShowSaveToast] = useState<boolean>(false);
+  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
   // 서비스 인스턴스
   const colorService = new ColorService({
@@ -95,6 +103,20 @@ const GeneratorPage: React.FC = () => {
 
     window.addEventListener('ai-config-updated', handleConfigUpdate);
     return () => window.removeEventListener('ai-config-updated', handleConfigUpdate);
+  }, []);
+
+  // 온라인/오프라인 상태 모니터링
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   // 팔레트 생성 핸들러
@@ -156,6 +178,38 @@ const GeneratorPage: React.FC = () => {
     setSelectedHarmony(harmony);
   };
 
+  // 팔레트 저장 핸들러
+  const handleSavePalette = async () => {
+    if (!generatedResult || !paletteName.trim()) return;
+
+    try {
+      // 로컬 스토리지에 저장
+      const savedPalettes = JSON.parse(localStorage.getItem('savedPalettes') || '[]');
+      const newPalette = {
+        id: Date.now().toString(),
+        name: paletteName,
+        keyword: selectedKeyword,
+        harmonyType: selectedHarmony,
+        colors: generatedResult.palette.colors,
+        createdAt: new Date().toISOString()
+      };
+      
+      savedPalettes.push(newPalette);
+      localStorage.setItem('savedPalettes', JSON.stringify(savedPalettes));
+      
+      // 성공 메시지 표시
+      setShowSaveToast(true);
+      setPaletteName('');
+      
+      // 토스트 자동 숨김
+      setTimeout(() => {
+        setShowSaveToast(false);
+      }, 3000);
+    } catch (error) {
+      console.error('팔레트 저장 실패:', error);
+    }
+  };
+
   // 접근성 점수에 따른 색상
   const getAccessibilityColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
@@ -165,6 +219,17 @@ const GeneratorPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      {/* 오프라인 인디케이터 */}
+      {!isOnline && (
+        <div 
+          className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-orange-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"
+          data-testid="offline-indicator"
+        >
+          <WifiOff className="w-4 h-4" />
+          <span className="text-sm font-medium">오프라인 모드</span>
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         {/* 헤더 */}
         <div className="text-center space-y-6 mb-12">
@@ -201,7 +266,7 @@ const GeneratorPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid xl:grid-cols-5 lg:grid-cols-3 gap-8">
+        <div className="grid xl:grid-cols-5 lg:grid-cols-3 gap-8" data-testid="main-container">
           {/* 왼쪽: 컨트롤 패널 */}
           <div className="xl:col-span-3 lg:col-span-2 space-y-6">
             <Card className="bg-white/80 backdrop-blur-sm border-0 shadow-xl overflow-hidden">
@@ -219,7 +284,7 @@ const GeneratorPage: React.FC = () => {
 
               <CardContent className="p-8">
                 <Tabs defaultValue="generate" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 mb-8">
+                  <TabsList className="grid w-full grid-cols-4 mb-8">
                     <TabsTrigger value="generate" className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
                       팔레트 생성
@@ -231,6 +296,10 @@ const GeneratorPage: React.FC = () => {
                     <TabsTrigger value="keywords" className="flex items-center gap-2">
                       <Image className="w-4 h-4" />
                       키워드 탐색
+                    </TabsTrigger>
+                    <TabsTrigger value="saved" className="flex items-center gap-2" data-testid="saved-palettes-tab" aria-label="저장된 팔레트 목록 보기">
+                      <Save className="w-4 h-4" />
+                      저장된 팔레트
                     </TabsTrigger>
                   </TabsList>
               
@@ -254,6 +323,47 @@ const GeneratorPage: React.FC = () => {
                     <div className="text-center py-12 text-gray-500">
                       <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>키워드 제안 기능 준비 중입니다.</p>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="saved" className="space-y-6 mt-8">
+                    <div className="space-y-4">
+                      {(() => {
+                        const savedPalettes = JSON.parse(localStorage.getItem('savedPalettes') || '[]');
+                        return savedPalettes.length > 0 ? (
+                          savedPalettes.map((palette: any) => (
+                            <div 
+                              key={palette.id} 
+                              className="p-4 bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                              data-testid="saved-palette"
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`저장된 팔레트: ${palette.name}, 키워드: ${palette.keyword}`}
+                            >
+                              <h4 className="font-semibold text-gray-800 mb-2">{palette.name}</h4>
+                              <div className="text-sm text-gray-600 mb-3">
+                                키워드: "{palette.keyword}" • 조화: {palette.harmonyType}
+                              </div>
+                              <div className="flex gap-2">
+                                {palette.colors.map((color: any, index: number) => (
+                                  <div
+                                    key={index}
+                                    className="w-8 h-8 rounded-md border"
+                                    style={{ backgroundColor: `hsl(${color.hsl.h}, ${color.hsl.s}%, ${color.hsl.l}%)` }}
+                                    aria-label={`색상 ${index + 1}: ${color.name || 'Unnamed'}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-center py-12 text-gray-500">
+                            <Save className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>저장된 팔레트가 없습니다.</p>
+                            <p className="text-sm">팔레트를 생성하고 저장해보세요.</p>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </TabsContent>
                 </Tabs>
@@ -295,6 +405,31 @@ const GeneratorPage: React.FC = () => {
                           className="w-full"
                         />
                       ))}
+                    </div>
+                    
+                    {/* 팔레트 저장 */}
+                    <div className="mt-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border" data-testid="color-palette">
+                      <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <Save className="w-4 h-4 text-blue-600" />
+                        팔레트 저장
+                      </h4>
+                      <div className="flex gap-3">
+                        <Input
+                          data-testid="palette-name-input"
+                          placeholder="팔레트 이름을 입력하세요"
+                          value={paletteName}
+                          onChange={(e) => setPaletteName(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          data-testid="save-palette-button"
+                          onClick={handleSavePalette}
+                          disabled={!paletteName.trim()}
+                          className="whitespace-nowrap"
+                        >
+                          저장
+                        </Button>
+                      </div>
                     </div>
 
                     {/* 접근성 요약 */}
@@ -415,6 +550,17 @@ const GeneratorPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* 저장 토스트 */}
+      {showSaveToast && (
+        <Toast
+          message="팔레트가 성공적으로 저장되었습니다!"
+          type="success"
+          duration={3000}
+          onClose={() => setShowSaveToast(false)}
+          data-testid="save-toast"
+        />
+      )}
     </div>
   );
 };

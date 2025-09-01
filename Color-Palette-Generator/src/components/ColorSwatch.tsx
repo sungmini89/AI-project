@@ -18,9 +18,9 @@ export const ColorSwatch: React.FC<ColorSwatchProps> = ({
   className
 }) => {
   const sizeClasses = {
-    sm: 'w-12 h-12',
-    md: 'w-16 h-16',
-    lg: 'w-24 h-24'
+    sm: 'w-12 h-12', // 48px - meets accessibility requirements
+    md: 'w-16 h-16', // 64px
+    lg: 'w-24 h-24'  // 96px
   };
 
   const textSizeClasses = {

@@ -34,6 +34,7 @@ function App() {
               <Route path="/generator" element={<GeneratorPage />} />
               <Route path="/saved" element={<SavedPalettesPage />} />
               <Route path="/image-extract" element={<ImageExtractPage />} />
+              <Route path="/extract" element={<ImageExtractPage />} /> {/* Test alias */}
               <Route path="/guide" element={<GuidePage />} />
               <Route path="/settings" element={<SettingsPage />} />
               {/* 기존 SavedPage 호환성 유지 */}

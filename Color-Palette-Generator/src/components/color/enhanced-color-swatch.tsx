@@ -37,6 +37,7 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Toast, ToastContainer } from '../ui/toast';
 import { 
   Copy, 
   Check, 
@@ -116,6 +117,7 @@ export const EnhancedColorSwatch: React.FC<EnhancedColorSwatchProps> = ({
 }) => {
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null);
   const [showColorBlind, setShowColorBlind] = useState<boolean>(false);
+  const [showCopyToast, setShowCopyToast] = useState<boolean>(false);
   
   const colorTheory = new ColorTheory();
   const accessibilityChecker = new AccessibilityChecker();
@@ -135,7 +137,11 @@ export const EnhancedColorSwatch: React.FC<EnhancedColorSwatchProps> = ({
     try {
       await navigator.clipboard.writeText(text);
       setCopiedFormat(format);
-      setTimeout(() => setCopiedFormat(null), 2000);
+      setShowCopyToast(true);
+      setTimeout(() => {
+        setCopiedFormat(null);
+        setShowCopyToast(false);
+      }, 2000);
     } catch (error) {
       console.error('복사 실패:', error);
     }
@@ -158,7 +164,21 @@ export const EnhancedColorSwatch: React.FC<EnhancedColorSwatchProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${className}`}>
+      <Card 
+        className={`overflow-hidden transition-all duration-300 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+        data-testid="color-card"
+        data-color={hexColor}
+        role="button"
+        aria-label={`색상 ${hexColor}, 클릭하여 복사`}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            copyToClipboard(hexColor, 'HEX');
+          }
+        }}
+        onClick={() => copyToClipboard(hexColor, 'HEX')}
+      >
         {/* 메인 색상 영역 */}
         <div 
           className="h-32 relative group cursor-pointer transition-transform hover:scale-105"
@@ -331,6 +351,17 @@ export const EnhancedColorSwatch: React.FC<EnhancedColorSwatchProps> = ({
           </CardContent>
         )}
       </Card>
+      
+      {/* 복사 토스트 알림 */}
+      {showCopyToast && (
+        <Toast
+          message={`${copiedFormat} 색상 코드가 복사되었습니다!`}
+          type="success"
+          duration={2000}
+          onClose={() => setShowCopyToast(false)}
+          data-testid="copy-toast"
+        />
+      )}
     </TooltipProvider>
   );
 };

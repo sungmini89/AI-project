@@ -3,7 +3,7 @@
  * Vibrant.js를 활용한 이미지 기반 팔레트 생성
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Upload, 
@@ -40,6 +40,14 @@ interface ExtractionSettings {
 }
 
 const ImageExtractPage: React.FC = () => {
+  // Set page title
+  useEffect(() => {
+    document.title = '이미지 색상 추출 - AI 색상 팔레트 생성기';
+    return () => {
+      document.title = 'AI 색상 팔레트 생성기';
+    };
+  }, []);
+
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
   const [extractedColors, setExtractedColors] = useState<ExtractedColor[]>([]);

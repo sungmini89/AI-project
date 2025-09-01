@@ -151,6 +151,8 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({
                 size="icon"
                 onClick={handleRandomKeyword}
                 title="랜덤 키워드"
+                aria-label="랜덤 키워드 선택"
+                tabIndex={0}
               >
                 <Wand2 className="w-4 h-4" />
               </Button>
@@ -193,7 +195,15 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => handleSuggestionClick(suggestion)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSuggestionClick(suggestion);
+                      }
+                    }}
                     className="text-xs"
+                    tabIndex={0}
+                    aria-label={`키워드 "${suggestion.keyword}" 선택`}
                   >
                     {suggestion.keyword}
                   </Button>
@@ -218,11 +228,11 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({
         <CardContent>
           <Tabs value={harmonyType} onValueChange={(value) => setHarmonyType(value as HarmonyType)}>
             <TabsList className="grid w-full grid-cols-5" data-testid="harmony-select" role="tablist" aria-label="색상 조화 규칙 선택">
-              <TabsTrigger value="complementary" className="text-xs">보색</TabsTrigger>
-              <TabsTrigger value="analogous" className="text-xs">유사색</TabsTrigger>
-              <TabsTrigger value="triadic" className="text-xs">삼색조</TabsTrigger>
-              <TabsTrigger value="tetradic" className="text-xs">사색조</TabsTrigger>
-              <TabsTrigger value="monochromatic" className="text-xs">단색조</TabsTrigger>
+              <TabsTrigger value="complementary" className="text-xs" data-testid="harmony-option-complementary">보색</TabsTrigger>
+              <TabsTrigger value="analogous" className="text-xs" data-testid="harmony-option-analogous">유사색</TabsTrigger>
+              <TabsTrigger value="triadic" className="text-xs" data-testid="harmony-option-triadic">삼색조</TabsTrigger>
+              <TabsTrigger value="tetradic" className="text-xs" data-testid="harmony-option-tetradic">사색조</TabsTrigger>
+              <TabsTrigger value="monochromatic" className="text-xs" data-testid="harmony-option-monochromatic">단색조</TabsTrigger>
             </TabsList>
             <TabsContent value={harmonyType} className="mt-4">
               <div className="text-center p-4 bg-gray-50 rounded-lg">
@@ -253,7 +263,7 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({
         >
           {isGenerating ? (
             <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" data-testid="loading-indicator" />
               팔레트 생성 중...
             </>
           ) : (
@@ -265,26 +275,6 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({
         </Button>
       </div>
 
-      {/* 생성된 팔레트 미리보기 */}
-      {(generatedPalette.length > 0 || isGenerating) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>생성된 팔레트</CardTitle>
-            <CardDescription>
-              {keyword && `"${keyword}" 키워드 기반 ${getHarmonyDescription(harmonyType)} 팔레트`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div data-testid="color-palette" role="region" aria-label="생성된 색상 팔레트">
-              <PaletteReveal
-                colors={generatedPalette.map(color => colorTheory.hslToHex(color))}
-                isGenerating={isGenerating}
-                className="justify-center"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

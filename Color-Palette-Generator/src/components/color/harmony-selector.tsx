@@ -118,13 +118,15 @@ export const HarmonySelector: React.FC<HarmonySelectorProps> = ({
           <Tabs 
             value={selectedHarmony} 
             onValueChange={(value) => onHarmonyChange(value as HarmonyType)}
+            data-testid="harmony-select"
           >
-            <TabsList className="grid w-full grid-cols-5 mb-6">
+            <TabsList className="grid w-full grid-cols-5 mb-6" data-testid="harmony-tabs">
               {harmonies.map(harmony => (
                 <TabsTrigger 
                   key={harmony.type} 
                   value={harmony.type}
                   className="text-xs"
+                  data-testid={`harmony-option-${harmony.type}`}
                 >
                   {harmony.name.split(' ')[0]}
                 </TabsTrigger>

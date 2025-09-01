@@ -37,11 +37,11 @@ test.describe('🌐 크로스 브라우저 호환성 테스트', () => {
         // 데스크톱 뷰 (1920x1080)
         await page.setViewportSize({ width: 1920, height: 1080 });
         await page.fill('[data-testid="keyword-input"]', '레이아웃');
-        await page.click('[data-testid="generate-palette"]');
-        await expect(page.locator('[data-testid="generated-palette"]')).toBeVisible();
+        await page.click('[data-testid="generate-button"]');
+        await expect(page.locator('[data-testid="color-palette"]')).toBeVisible();
         
         // 그리드 레이아웃 확인
-        const paletteGrid = page.locator('[data-testid="generated-palette"]');
+        const paletteGrid = page.locator('[data-testid="color-palette"]');
         const gridStyles = await paletteGrid.evaluate(el => {
           const styles = window.getComputedStyle(el);
           return {
