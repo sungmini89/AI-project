@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "regions": ["icn1", "hnd1"],
   "build": {
     "env": {
       "NODE_ENV": "production",
