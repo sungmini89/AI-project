@@ -11,12 +11,12 @@
   },
   "functions": {
     "api/colors/proxy.js": {
-      "runtime": "nodejs18.x",
+      "runtime": "@vercel/node@18.17.0",
       "memory": 1024,
       "maxDuration": 10
     },
     "api/health.js": {
-      "runtime": "nodejs18.x",
+      "runtime": "@vercel/node@18.17.0",
       "memory": 512,
       "maxDuration": 5
     }
