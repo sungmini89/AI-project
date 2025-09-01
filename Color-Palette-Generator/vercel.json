@@ -75,11 +75,5 @@
       "source": "/api/colors",
       "destination": "/api/colors/proxy"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/health",
-      "schedule": "*/5 * * * *"
-    }
   ]
 }
