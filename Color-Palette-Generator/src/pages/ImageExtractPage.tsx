@@ -148,13 +148,13 @@ const ImageExtractPage: React.FC = () => {
     
     try {
       // Vibrant 옵션 설정
-      const options = {
-        quality: settings.quality,
-        maxSwatches: settings.maxColors
-      };
+      // const options = {
+      //   quality: settings.quality,
+      //   maxSwatches: settings.maxColors
+      // };
 
       // 이미지에서 색상 추출
-      const palette = await Vibrant.from(imagePreview, options).getPalette();
+      const palette = await Vibrant.from(imagePreview).getPalette();
       
       const colors: ExtractedColor[] = [];
       

@@ -363,7 +363,7 @@ const GuidePage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            {accessibilityLevels.map((level, index) => (
+            {accessibilityLevels.map((level) => (
               <div key={level.level} className="border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-semibold">WCAG {level.level} - {level.name}</h4>
@@ -483,7 +483,7 @@ const GuidePage: React.FC = () => {
               { season: '여름', colors: ['#87CEEB', '#F0E68C', '#FF6347', '#32CD32'], icon: <Sun className="h-4 w-4" /> },
               { season: '가을', colors: ['#D2691E', '#B22222', '#DAA520', '#8B4513'], icon: <Droplets className="h-4 w-4" /> },
               { season: '겨울', colors: ['#4682B4', '#708090', '#FFFFFF', '#2F4F4F'], icon: <Moon className="h-4 w-4" /> }
-            ].map((seasonData, index) => (
+            ].map((seasonData) => (
               <div key={seasonData.season} className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   {seasonData.icon}

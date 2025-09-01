@@ -10,13 +10,10 @@ import {
   Trash2, 
   Copy, 
   Search, 
-  Filter,
   Star,
   Calendar,
   Palette,
-  Share2,
-  Edit3,
-  Tag
+  Share2
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -51,7 +48,7 @@ const SavedPalettesPage: React.FC = () => {
   });
   const [selectedPalettes, setSelectedPalettes] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<'date' | 'usage' | 'name'>('date');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  // const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     loadSavedPalettes();
@@ -94,7 +91,7 @@ const SavedPalettesPage: React.FC = () => {
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
       filtered = filtered.filter(p => 
-        p.name.toLowerCase().includes(searchTerm) ||
+        (p.name || '').toLowerCase().includes(searchTerm) ||
         p.keyword?.toLowerCase().includes(searchTerm) ||
         p.tags.some(tag => tag.toLowerCase().includes(searchTerm))
       );
@@ -127,7 +124,7 @@ const SavedPalettesPage: React.FC = () => {
           break;
       }
       
-      filtered = filtered.filter(p => p.createdAt >= filterDate);
+      filtered = filtered.filter(p => p.createdAt && p.createdAt >= filterDate);
     }
 
     // 태그 필터
@@ -141,11 +138,11 @@ const SavedPalettesPage: React.FC = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date':
-          return b.createdAt.getTime() - a.createdAt.getTime();
+          return (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
         case 'usage':
           return b.usageCount - a.usageCount;
         case 'name':
-          return a.name.localeCompare(b.name);
+          return (a.name || '').localeCompare(b.name || '');
         default:
           return 0;
       }
@@ -223,28 +220,28 @@ const SavedPalettesPage: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const addTag = (paletteId: string, tag: string): void => {
-    const updated = palettes.map(p => 
-      p.id === paletteId 
-        ? { ...p, tags: [...new Set([...p.tags, tag.trim()])] }
-        : p
-    );
-    savePalettes(updated);
-  };
+  // const addTag = (paletteId: string, tag: string): void => {
+  //   const updated = palettes.map(p => 
+  //     p.id === paletteId 
+  //       ? { ...p, tags: [...new Set([...p.tags, tag.trim()])] }
+  //       : p
+  //   );
+  //   savePalettes(updated);
+  // };
 
-  const removeTag = (paletteId: string, tagToRemove: string): void => {
-    const updated = palettes.map(p => 
-      p.id === paletteId 
-        ? { ...p, tags: p.tags.filter(tag => tag !== tagToRemove) }
-        : p
-    );
-    savePalettes(updated);
-  };
+  // const removeTag = (paletteId: string, tagToRemove: string): void => {
+  //   const updated = palettes.map(p => 
+  //     p.id === paletteId 
+  //       ? { ...p, tags: p.tags.filter(tag => tag !== tagToRemove) }
+  //       : p
+  //   );
+  //   savePalettes(updated);
+  // };
 
-  const getAllTags = (): string[] => {
-    const allTags = palettes.flatMap(p => p.tags);
-    return [...new Set(allTags)].sort();
-  };
+  // const getAllTags = (): string[] => {
+  //   const allTags = palettes.flatMap(p => p.tags);
+  //   return [...new Set(allTags)].sort();
+  // };
 
   const PaletteCard: React.FC<{ palette: SavedPalette }> = ({ palette }) => (
     <motion.div
@@ -319,7 +316,7 @@ const SavedPalettesPage: React.FC = () => {
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {palette.createdAt.toLocaleDateString()}
+              {palette.createdAt?.toLocaleDateString() || 'Unknown'}
             </span>
             <span className="flex items-center gap-1">
               <Palette className="h-3 w-3" />
