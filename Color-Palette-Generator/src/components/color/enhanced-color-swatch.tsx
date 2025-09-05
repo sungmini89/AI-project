@@ -37,7 +37,7 @@ import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { Toast, ToastContainer } from '../ui/toast';
+import { Toast } from '../ui/toast';
 import { 
   Copy, 
   Check, 

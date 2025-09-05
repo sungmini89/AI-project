@@ -1,22 +1,24 @@
 {
-  "version": 2,
-  "build": {
-    "env": {
-      "NODE_ENV": "production",
-      "VITE_API_MODE": "free",
-      "VITE_ENABLE_PWA": "true",
-      "VITE_COLORMIND_API_URL": "http://colormind.io/api/",
-      "VITE_COLOR_API_URL": "https://www.thecolorapi.com"
-    }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm ci",
+  "env": {
+    "NODE_ENV": "production",
+    "VITE_API_MODE": "free",
+    "VITE_ENABLE_PWA": "true",
+    "VITE_COLORMIND_API_URL": "http://colormind.io/api/",
+    "VITE_COLOR_API_URL": "https://www.thecolorapi.com"
   },
   "functions": {
     "api/colors/proxy.js": {
-      "runtime": "nodejs18.x",
+      "runtime": "nodejs20.x",
       "memory": 1024,
       "maxDuration": 10
     },
     "api/health.js": {
-      "runtime": "nodejs18.x",
+      "runtime": "nodejs20.x",
       "memory": 512,
       "maxDuration": 5
     }
@@ -28,6 +30,18 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600, s-maxage=3600"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
         }
       ]
     },
@@ -49,11 +63,24 @@
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=31536000; includeSubDomains"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
         }
       ]
     },
     {
-      "source": "/static/(.*)",
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|svg|webp|woff2))",
       "headers": [
         {
           "key": "Cache-Control",

@@ -9,7 +9,6 @@ import { Loader2, Palette, Sparkles, Wand2 } from 'lucide-react';
 
 import { ColorTheory, KeywordMapper, AccessibilityChecker } from '../../algorithms';
 import type { HSLColor, HarmonyType, KeywordMapping } from '../../algorithms';
-import { PaletteReveal } from '../magicui/color-transition';
 import { HarmonyVisualizer } from '../magicui/harmony-visualizer';
 
 interface PaletteGeneratorProps {
@@ -28,7 +27,7 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({
   const [keyword, setKeyword] = useState<string>('');
   const [harmonyType, setHarmonyType] = useState<HarmonyType>('complementary');
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [generatedPalette, setGeneratedPalette] = useState<HSLColor[]>([]);
+  const [, setGeneratedPalette] = useState<HSLColor[]>([]);
   const [keywordSuggestions, setKeywordSuggestions] = useState<KeywordMapping[]>([]);
   const [keywordInfo, setKeywordInfo] = useState<KeywordMapping | null>(null);
   
