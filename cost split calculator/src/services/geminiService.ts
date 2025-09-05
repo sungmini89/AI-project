@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export interface GeminiEnhancedResult {
   items: any[];
@@ -15,6 +15,27 @@ export interface GeminiConfig {
   maxOutputTokens?: number;
 }
 
+/**
+ * Google Gemini AI를 활용한 OCR 결과 개선 서비스
+ *
+ * 기본 OCR 결과를 Gemini AI로 분석하여 더 정확한 영수증 정보를 추출합니다.
+ * 한국어 영수증에 특화된 프롬프트를 사용하여 상품명과 가격을 정확하게 파싱하고,
+ * OCR 오인식 부분을 수정하여 신뢰도를 높입니다.
+ *
+ * @description
+ * **주요 기능:**
+ * - OCR 결과 AI 기반 개선 및 검증
+ * - 한국어 영수증 텍스트 직접 분석
+ * - 상품명과 가격 자동 수정
+ * - 신뢰도 점수 및 개선 제안 제공
+ *
+ * **API 제한:**
+ * - 일일 60회 요청 제한 (무료 티어)
+ * - 최소 1초 간격 요청 제한
+ * - 사용량 로컬 스토리지 자동 관리
+ *
+ * @class GeminiService
+ */
 class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
   private model: any = null;
@@ -31,22 +52,24 @@ class GeminiService {
    * Gemini AI 초기화
    */
   initialize(config: GeminiConfig): void {
-    if (!config.apiKey || config.apiKey === 'optional') {
-      console.warn('Gemini API 키가 설정되지 않았습니다. OCR 결과 개선 기능을 사용할 수 없습니다.');
+    if (!config.apiKey || config.apiKey === "optional") {
+      console.warn(
+        "Gemini API 키가 설정되지 않았습니다. OCR 결과 개선 기능을 사용할 수 없습니다."
+      );
       return;
     }
 
     try {
       this.genAI = new GoogleGenerativeAI(config.apiKey);
-      this.model = this.genAI.getGenerativeModel({ 
-        model: config.model || 'gemini-pro',
+      this.model = this.genAI.getGenerativeModel({
+        model: config.model || "gemini-pro",
         generationConfig: {
           temperature: config.temperature || 0.1,
           maxOutputTokens: config.maxOutputTokens || 1000,
-        }
+        },
       });
     } catch (error) {
-      console.error('Gemini 초기화 실패:', error);
+      console.error("Gemini 초기화 실패:", error);
       throw error;
     }
   }
@@ -59,7 +82,7 @@ class GeminiService {
     items: any[]
   ): Promise<GeminiEnhancedResult> {
     if (!this.isAvailable()) {
-      throw new Error('Gemini API를 사용할 수 없습니다');
+      throw new Error("Gemini API를 사용할 수 없습니다");
     }
 
     await this.checkRateLimit();
@@ -74,7 +97,7 @@ class GeminiService {
       this.incrementRequestCount();
       return this.parseGeminiResponse(text);
     } catch (error) {
-      console.error('Gemini OCR 개선 실패:', error);
+      console.error("Gemini OCR 개선 실패:", error);
       throw error;
     }
   }
@@ -84,7 +107,7 @@ class GeminiService {
    */
   async extractReceiptInfo(ocrText: string): Promise<GeminiEnhancedResult> {
     if (!this.isAvailable()) {
-      throw new Error('Gemini API를 사용할 수 없습니다');
+      throw new Error("Gemini API를 사용할 수 없습니다");
     }
 
     await this.checkRateLimit();
@@ -99,7 +122,7 @@ class GeminiService {
       this.incrementRequestCount();
       return this.parseGeminiResponse(text);
     } catch (error) {
-      console.error('Gemini 영수증 추출 실패:', error);
+      console.error("Gemini 영수증 추출 실패:", error);
       throw error;
     }
   }
@@ -116,7 +139,7 @@ OCR 원본 텍스트:
 ${ocrText}
 
 현재 파싱된 항목들:
-${items.map(item => `- ${item.name}: ${item.price}원`).join('\n')}
+${items.map((item) => `- ${item.name}: ${item.price}원`).join("\n")}
 
 요청사항:
 1. 항목명이 잘못 인식된 경우 올바른 이름으로 수정
@@ -184,11 +207,11 @@ ${ocrText}
       // JSON 부분 추출
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('유효한 JSON 응답이 없습니다');
+        throw new Error("유효한 JSON 응답이 없습니다");
       }
 
       const parsed = JSON.parse(jsonMatch[0]);
-      
+
       // 항목들에 ID 추가
       const itemsWithId = parsed.items.map((item: any, index: number) => ({
         id: `gemini-${Date.now()}-${index}`,
@@ -206,8 +229,8 @@ ${ocrText}
         suggestions: parsed.suggestions || [],
       };
     } catch (error) {
-      console.error('Gemini 응답 파싱 실패:', error);
-      throw new Error('Gemini 응답을 해석할 수 없습니다');
+      console.error("Gemini 응답 파싱 실패:", error);
+      throw new Error("Gemini 응답을 해석할 수 없습니다");
     }
   }
 
@@ -224,16 +247,18 @@ ${ocrText}
   private async checkRateLimit(): Promise<void> {
     // 일일 제한 확인
     if (this.requestCount >= this.dailyLimit) {
-      throw new Error(`일일 API 사용 한도(${this.dailyLimit}회)를 초과했습니다`);
+      throw new Error(
+        `일일 API 사용 한도(${this.dailyLimit}회)를 초과했습니다`
+      );
     }
 
     // 최소 간격 확인
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
-    
+
     if (timeSinceLastRequest < this.minInterval) {
       const waitTime = this.minInterval - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
+      await new Promise((resolve) => setTimeout(resolve, waitTime));
     }
 
     this.lastRequestTime = Date.now();
@@ -253,8 +278,8 @@ ${ocrText}
   private loadRequestCount(): void {
     try {
       const today = new Date().toDateString();
-      const saved = localStorage.getItem('gemini-usage');
-      
+      const saved = localStorage.getItem("gemini-usage");
+
       if (saved) {
         const data = JSON.parse(saved);
         if (data.date === today) {
@@ -264,7 +289,7 @@ ${ocrText}
         }
       }
     } catch (error) {
-      console.warn('Gemini 사용량 로드 실패:', error);
+      console.warn("Gemini 사용량 로드 실패:", error);
       this.requestCount = 0;
     }
   }
@@ -276,9 +301,9 @@ ${ocrText}
     try {
       const today = new Date().toDateString();
       const data = { date: today, count: this.requestCount };
-      localStorage.setItem('gemini-usage', JSON.stringify(data));
+      localStorage.setItem("gemini-usage", JSON.stringify(data));
     } catch (error) {
-      console.warn('Gemini 사용량 저장 실패:', error);
+      console.warn("Gemini 사용량 저장 실패:", error);
     }
   }
 
@@ -304,7 +329,7 @@ ${ocrText}
    */
   resetUsage(): void {
     this.requestCount = 0;
-    localStorage.removeItem('gemini-usage');
+    localStorage.removeItem("gemini-usage");
   }
 }
 
@@ -313,11 +338,11 @@ export const geminiService = new GeminiService();
 
 // 환경변수에서 API 키 로드 시도
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-if (apiKey && apiKey !== 'optional') {
+if (apiKey && apiKey !== "optional") {
   try {
     geminiService.initialize({ apiKey });
   } catch (error) {
-    console.warn('Gemini 서비스 자동 초기화 실패:', error);
+    console.warn("Gemini 서비스 자동 초기화 실패:", error);
   }
 }
 
