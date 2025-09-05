@@ -1,9 +1,58 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Image as ImageIcon, X, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+/**
+ * @fileoverview 이미지 업로드 및 미리보기 컴포넌트
+ *
+ * 사용자가 이미지 파일을 업로드하고 미리보기를 확인할 수 있는
+ * 드래그 앤 드롭을 지원하는 파일 업로드 컴포넌트입니다.
+ *
+ * @author AI Color Palette Generator Team
+ * @version 1.0.0
+ * @since 1.0.0
+ *
+ * **주요 기능:**
+ * - 드래그 앤 드롭 파일 업로드
+ * - 이미지 파일 유효성 검사
+ * - 실시간 이미지 미리보기
+ * - 파일 크기 및 형식 제한
+ * - 로딩 상태 표시
+ * - 에러 메시지 표시
+ * - 접근성 지원 (ARIA 라벨, 키보드 네비게이션)
+ *
+ * **지원 형식:**
+ * - JPEG, JPG, PNG, WebP, GIF
+ * - 최대 파일 크기: 10MB (설정 가능)
+ *
+ * **사용 예시:**
+ * ```tsx
+ * <ImageUpload
+ *   onImageUpload={handleImageUpload}
+ *   maxSize={10}
+ *   acceptedFormats={['image/jpeg', 'image/png']}
+ * />
+ * ```
+ */
 
+import React, { useState, useCallback, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Upload, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+/**
+ * ImageUpload 컴포넌트의 Props 인터페이스
+ *
+ * @interface ImageUploadProps
+ * @property {Function} onImageUpload - 이미지 업로드 시 콜백 함수
+ * @property {boolean} [isLoading=false] - 로딩 상태
+ * @property {number} [maxSize=10] - 최대 파일 크기 (MB)
+ * @property {string[]} [acceptedFormats] - 허용된 파일 형식 배열
+ * @property {string} [className] - 추가 CSS 클래스명
+ */
 interface ImageUploadProps {
   onImageUpload: (file: File) => void;
   isLoading?: boolean;
@@ -16,8 +65,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   onImageUpload,
   isLoading = false,
   maxSize = 10,
-  acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'],
-  className
+  acceptedFormats = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ],
+  className,
 }) => {
   const [dragActive, setDragActive] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -25,65 +80,81 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = useCallback((file: File): string | null => {
-    // Check file type
-    if (!acceptedFormats.includes(file.type)) {
-      return `지원하지 않는 파일 형식입니다. 지원 형식: ${acceptedFormats.map(format => format.split('/')[1].toUpperCase()).join(', ')}`;
-    }
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      // Check file type
+      if (!acceptedFormats.includes(file.type)) {
+        return `지원하지 않는 파일 형식입니다. 지원 형식: ${acceptedFormats
+          .map((format) => format.split("/")[1].toUpperCase())
+          .join(", ")}`;
+      }
 
-    // Check file size
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > maxSize) {
-      return `파일 크기가 너무 큽니다. 최대 크기: ${maxSize}MB (현재: ${fileSizeMB.toFixed(1)}MB)`;
-    }
+      // Check file size
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > maxSize) {
+        return `파일 크기가 너무 큽니다. 최대 크기: ${maxSize}MB (현재: ${fileSizeMB.toFixed(
+          1
+        )}MB)`;
+      }
 
-    return null;
-  }, [acceptedFormats, maxSize]);
+      return null;
+    },
+    [acceptedFormats, maxSize]
+  );
 
-  const handleFileSelect = useCallback((file: File) => {
-    setError(null);
-    
-    const validationError = validateFile(file);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+  const handleFileSelect = useCallback(
+    (file: File) => {
+      setError(null);
 
-    setUploadedFile(file);
-    
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setPreviewImage(previewUrl);
-    
-    // Trigger upload callback
-    onImageUpload(file);
-  }, [validateFile, onImageUpload]);
+      const validationError = validateFile(file);
+      if (validationError) {
+        setError(validationError);
+        return;
+      }
+
+      setUploadedFile(file);
+
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewImage(previewUrl);
+
+      // Trigger upload callback
+      onImageUpload(file);
+    },
+    [validateFile, onImageUpload]
+  );
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0]);
-    }
-  }, [handleFileSelect]);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    },
+    [handleFileSelect]
+  );
 
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileSelect(e.target.files[0]);
-    }
-  }, [handleFileSelect]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+        handleFileSelect(e.target.files[0]);
+      }
+    },
+    [handleFileSelect]
+  );
 
   const handleButtonClick = useCallback(() => {
     fileInputRef.current?.click();
@@ -97,7 +168,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
     }
     setError(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   }, [previewImage]);
 
@@ -119,17 +190,18 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
             이미지에서 색상 추출
           </CardTitle>
           <CardDescription>
-            이미지를 업로드하여 주요 색상들을 추출하고 조화로운 팔레트를 생성합니다.
+            이미지를 업로드하여 주요 색상들을 추출하고 조화로운 팔레트를
+            생성합니다.
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           {!previewImage ? (
             <div
               className={cn(
                 "relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
-                dragActive 
-                  ? "border-blue-500 bg-blue-50" 
+                dragActive
+                  ? "border-blue-500 bg-blue-50"
                   : "border-gray-300 hover:border-gray-400 hover:bg-gray-50",
                 isLoading && "opacity-50 cursor-not-allowed"
               )}
@@ -146,14 +218,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept={acceptedFormats.join(',')}
+                accept={acceptedFormats.join(",")}
                 onChange={handleInputChange}
                 className="sr-only"
                 disabled={isLoading}
                 data-testid="file-input"
                 aria-label="이미지 파일 선택"
               />
-              
+
               <div className="space-y-4">
                 <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
                   {isLoading ? (
@@ -162,16 +234,18 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                     <Upload className="h-8 w-8 text-gray-400" />
                   )}
                 </div>
-                
+
                 <div className="space-y-2">
                   <p className="text-lg font-medium text-gray-700">
-                    {isLoading ? '이미지 처리 중...' : '이미지를 드래그하거나 클릭하여 업로드'}
+                    {isLoading
+                      ? "이미지 처리 중..."
+                      : "이미지를 드래그하거나 클릭하여 업로드"}
                   </p>
                   <p className="text-sm text-gray-500">
                     지원 형식: JPG, PNG, WebP, GIF (최대 {maxSize}MB)
                   </p>
                 </div>
-                
+
                 {!isLoading && (
                   <Button type="button" variant="outline" className="mt-4">
                     <Upload className="h-4 w-4 mr-2" />
@@ -207,7 +281,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {/* File Info */}
               {uploadedFile && (
                 <div className="bg-gray-50 rounded-lg p-3">
@@ -219,11 +293,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                       </p>
                     </div>
                     {!isLoading && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearImage}
-                      >
+                      <Button variant="outline" size="sm" onClick={clearImage}>
                         다시 선택
                       </Button>
                     )}
@@ -242,11 +312,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
           {/* Usage Tips */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <h4 className="font-medium text-sm text-blue-900 mb-2">💡 더 나은 결과를 위한 팁</h4>
+            <h4 className="font-medium text-sm text-blue-900 mb-2">
+              💡 더 나은 결과를 위한 팁
+            </h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• 색상이 뚜렷하고 다양한 이미지를 사용해보세요</li>
               <li>• 고해상도 이미지일수록 더 정확한 색상 추출이 가능합니다</li>
-              <li>• 자연 풍경, 예술 작품, 제품 사진 등이 좋은 결과를 만듭니다</li>
+              <li>
+                • 자연 풍경, 예술 작품, 제품 사진 등이 좋은 결과를 만듭니다
+              </li>
             </ul>
           </div>
         </CardContent>
