@@ -11,11 +11,6 @@
     "VITE_COLORMIND_API_URL": "http://colormind.io/api/",
     "VITE_COLOR_API_URL": "https://www.thecolorapi.com"
   },
-  "functions": {
-    "api/health.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "headers": [
     {
       "source": "/api/(.*)",

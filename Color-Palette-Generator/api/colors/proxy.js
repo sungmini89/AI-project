@@ -1,8 +1,4 @@
-// Vercel Edge Function for Color API Proxy with Enhanced Performance
-export const config = {
-  runtime: 'edge',
-  regions: ['icn1', 'hnd1'], // Seoul, Tokyo regions for Korean users
-};
+// Vercel Serverless Function for Color API Proxy with Enhanced Performance
 
 // Korean Color Keywords with Caching
 const koreanColorMap = {
@@ -151,50 +147,41 @@ const rateLimiter = {
   }
 };
 
-export default async function handler(request) {
+export default async function handler(req, res) {
   // CORS Headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  };
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
     // Rate limiting
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
+    const ip = req.headers['x-forwarded-for'] || 
+               req.headers['x-real-ip'] || 
+               req.connection.remoteAddress ||
                'unknown';
     
     if (!rateLimiter.isAllowed(ip)) {
-      return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return res.status(429).json({ error: 'Rate limit exceeded' });
     }
 
-    const url = new URL(request.url);
-    const keyword = url.searchParams.get('keyword');
-    const harmonyType = url.searchParams.get('harmony') || 'complementary';
-    const count = Math.min(parseInt(url.searchParams.get('count') || '5'), 10);
+    const { keyword, harmony: harmonyType = 'complementary', count = '5' } = req.query;
 
     if (!keyword) {
-      return new Response(JSON.stringify({ error: 'Keyword parameter is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return res.status(400).json({ error: 'Keyword parameter is required' });
     }
 
     // Check Korean color mapping first
     const koreanColors = koreanColorMap[keyword.toLowerCase()];
     let palette;
+    const colorCount = Math.min(parseInt(count), 10);
 
     if (koreanColors) {
       // Use predefined Korean colors
-      palette = koreanColors.slice(0, count);
+      palette = koreanColors.slice(0, colorCount);
     } else {
       // Generate colors based on keyword hash
       const hashCode = keyword.split('').reduce((a, b) => {
@@ -244,11 +231,11 @@ export default async function handler(request) {
       };
       
       const baseHexColor = hslToHex(baseHue, baseSaturation, baseLightness);
-      palette = generateColorHarmony(baseHexColor, harmonyType).slice(0, count);
+      palette = generateColorHarmony(baseHexColor, harmonyType).slice(0, colorCount);
     }
 
     // Performance metrics
-    const responseTime = Date.now();
+    const startTime = Date.now();
     
     const response = {
       success: true,
@@ -259,30 +246,24 @@ export default async function handler(request) {
         metadata: {
           cached: !!koreanColors,
           generatedAt: new Date().toISOString(),
-          region: 'asia-northeast1',
-          responseTime: `${Date.now() - responseTime}ms`
+          region: process.env.VERCEL_REGION || 'local',
+          responseTime: `${Date.now() - startTime}ms`
         }
       }
     };
 
-    return new Response(JSON.stringify(response), {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-        'X-Response-Time': `${Date.now() - responseTime}ms`
-      }
-    });
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.setHeader('X-Response-Time', `${Date.now() - startTime}ms`);
+    
+    return res.status(200).json(response);
 
   } catch (error) {
     console.error('API Error:', error);
     
-    return new Response(JSON.stringify({ 
+    return res.status(500).json({
       error: 'Internal server error',
-      message: error.message 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      message: error.message
     });
   }
 }
