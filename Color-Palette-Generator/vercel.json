@@ -12,15 +12,8 @@
     "VITE_COLOR_API_URL": "https://www.thecolorapi.com"
   },
   "functions": {
-    "api/colors/proxy.js": {
-      "runtime": "nodejs20.x",
-      "memory": 1024,
-      "maxDuration": 10
-    },
     "api/health.js": {
-      "runtime": "nodejs20.x",
-      "memory": 512,
-      "maxDuration": 5
+      "runtime": "nodejs20.x"
     }
   },
   "headers": [
